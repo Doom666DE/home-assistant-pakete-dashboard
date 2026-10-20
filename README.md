@@ -2,6 +2,26 @@
 
 Privates Projekt für das individuell erweiterte Paket-Dashboard. Dieser Stand wurde am **20. Oktober 2026** aus der laufenden Home-Assistant-Installation und den zugehörigen Arbeitsdateien zusammengeführt.
 
+**Erstellt mit GPT-6.1 Sol · Denkaufwand: Gering.** Die gesamte eigene Umsetzung – Dashboard-Gestaltung, Jinja-Anpassungen, Automationen, Skripte, Mail-Erweiterungen und DPD-Browser-Hilfe – entstand mit dieser Unterstützung in Codex. Die verwendeten Fremdintegrationen und ihre ursprünglichen Autoren sind unter [Herkunft](#herkunft) und in [THIRD_PARTY.md](THIRD_PARTY.md) aufgeführt.
+
+## So sieht es aus
+
+Echte Ausschnitte aus bisherigen Entwicklungsständen des Dashboards. Die Auswahl zeigt keine persönlichen Sendungsnummern oder Adressen. Zähler, Termine und Verbindungsstatus sind Momentaufnahmen und keine Aussage über den aktuellen Betrieb. [Hinweise zu den Aufnahmen](docs/screenshots/README.md).
+
+| Sendungsstatus und Paketdienste | Briefankündigungen und Kalender |
+| --- | --- |
+| ![Kompakte Statuszähler und Dienstekarten](docs/screenshots/sendungsstatus-und-dienste.png) | ![Briefkasten mit Zählern und Zustellkalender](docs/screenshots/briefankuendigungen-und-kalender.png) |
+
+### Alphabetische Dienstetabelle
+
+![Sendungszahlen nach Paketdienst und Status](docs/screenshots/dienstetabelle.png)
+
+### DPD-Browser-Hilfe
+
+Bedienelemente und Rückmeldung nach dem erfolgreichen Erfassen und Schließen des verwendeten DPD-Tabs:
+
+![DPD öffnen, Vorschau holen und Rückmeldung nach dem Schließen](docs/screenshots/dpd-browserhilfe-aktionen.png)
+
 ## Enthalten
 
 - Aktuelles dreispaltiges Dashboard mit kompakten Zählern, zweispaltigen Sendungskarten, Statusfarben, Fortschritt, Tooltips und alphabetischer Dienstetabelle.
@@ -28,6 +48,7 @@ Privates Projekt für das individuell erweiterte Paket-Dashboard. Dieser Stand w
 | `examples/` | Konfigurationsanschlüsse und Helferdefinitionen |
 | `archive/` | Frühere Notizen und separate 17TRACK-Mail-Automation |
 | `tests/`, `tools/` | Offline-Prüfungen und Erweiterungs-Build |
+| `docs/screenshots/` | Echte Dashboard-Ausschnitte ohne persönliche Sendungsdaten |
 
 ## Einrichtung
 
