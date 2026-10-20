@@ -12,6 +12,12 @@ Privates Projekt für das individuell erweiterte Paket-Dashboard. Dieser Stand w
 
 *Vom Nutzer bereitgestellte, KI-bearbeitete Übersicht ohne Seitenleiste. Sie dient zur Veranschaulichung der Gestaltung und ist kein pixelgenauer Screenshot; einzelne Texte und Zahlen können abweichen.*
 
+### Unterer Bereich: Automatik und DPD-Browser-Hilfe
+
+![Unterer Dashboard-Bereich ohne Seitenleiste mit vollständiger Automatik, DPD-Browser-Hilfe und manuellem Hinzufügen](docs/screenshots/dashboard-unterer-bereich-ohne-seitenleiste.png)
+
+*Ergänzende, KI-anonymisierte Ansicht mit vollständigem unteren Bereich: Dienstetabelle, Automatik, DPD-Browser-Hilfe einschließlich Abschlussmeldung sowie manuelles Hinzufügen. Persönliche Nummern und PLZ sind geschwärzt. Auch diese Darstellung ist illustrativ und kein pixelgenauer Screenshot.*
+
 ### Echte Detailaufnahmen
 
 Echte Ausschnitte aus bisherigen Entwicklungsständen des Dashboards. Die Auswahl zeigt keine persönlichen Sendungsnummern oder Adressen. Zähler, Termine und Verbindungsstatus sind Momentaufnahmen und keine Aussage über den aktuellen Betrieb. [Hinweise zu den Aufnahmen](docs/screenshots/README.md).
