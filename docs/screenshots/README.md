@@ -1,11 +1,14 @@
 # Dashboard-Aufnahmen
 
-Diese Bilder zeigen unveränderte UI-Ausschnitte aus echten vorhandenen Browser-Screenshots des Projekts. Die Ausschnitte wurden im Browser aufgenommen; es wurden keine Dashboard-Elemente nachgezeichnet oder durch generierte Elemente ersetzt. Eine versuchte KI-Anonymisierung wurde wegen Änderungen an UI-Details verworfen und nicht in das Repository aufgenommen.
+Die vier Detailbilder zeigen unveränderte UI-Ausschnitte aus echten vorhandenen Browser-Screenshots des Projekts. Die Ausschnitte wurden im Browser aufgenommen; dort wurden keine Dashboard-Elemente nachgezeichnet oder durch generierte Elemente ersetzt.
+
+Zusätzlich enthält `dashboard-uebersicht-ohne-seitenleiste.png` die vom Nutzer nachgereichte, bereits KI-anonymisierte Übersicht, für die Dokumentation ohne Seitenleiste aufbereitet. Diese Übersicht wurde mit dem Bildwerkzeug bearbeitet und ist ausdrücklich eine Illustration, kein pixelgenauer Screenshot. Einzelne Texte, Zahlen oder Abstände können vom Original und vom Live-Dashboard abweichen. Sie ersetzt die vier echten Detailaufnahmen nicht.
 
 Personenbezogene Bereiche, Sendungsnummern und Abholadressen liegen außerhalb der gewählten Ausschnitte. Die vollständigen Originalaufnahmen werden nicht hochgeladen.
 
 | Datei | Gezeigter Bereich | Ursprüngliche Aufnahme |
 | --- | --- | --- |
+| `dashboard-uebersicht-ohne-seitenleiste.png` | Illustrierende Gesamtübersicht ohne Seitenleiste | Vom Nutzer bereitgestellte, KI-bearbeitete Bildfassung |
 | `sendungsstatus-und-dienste.png` | Statuszähler und Dienstekarten | `hermes-prognose-kurz.png` |
 | `briefankuendigungen-und-kalender.png` | Briefankündigungen, Leeren und Kalender | `hermes-prognose-kurz.png` |
 | `dienstetabelle.png` | Alphabetisch sortierte Dienste mit Statusspalten | `tab-schliessen-live-erfolgreich.png` |

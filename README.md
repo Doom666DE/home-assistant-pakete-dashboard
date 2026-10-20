@@ -6,6 +6,14 @@ Privates Projekt für das individuell erweiterte Paket-Dashboard. Dieser Stand w
 
 ## So sieht es aus
 
+### Große Übersicht
+
+![Anonymisierte Dashboard-Übersicht ohne Seitenleiste](docs/screenshots/dashboard-uebersicht-ohne-seitenleiste.png)
+
+*Vom Nutzer bereitgestellte, KI-bearbeitete Übersicht ohne Seitenleiste. Sie dient zur Veranschaulichung der Gestaltung und ist kein pixelgenauer Screenshot; einzelne Texte und Zahlen können abweichen.*
+
+### Echte Detailaufnahmen
+
 Echte Ausschnitte aus bisherigen Entwicklungsständen des Dashboards. Die Auswahl zeigt keine persönlichen Sendungsnummern oder Adressen. Zähler, Termine und Verbindungsstatus sind Momentaufnahmen und keine Aussage über den aktuellen Betrieb. [Hinweise zu den Aufnahmen](docs/screenshots/README.md).
 
 | Sendungsstatus und Paketdienste | Briefankündigungen und Kalender |
