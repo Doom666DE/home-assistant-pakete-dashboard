@@ -1,0 +1,9 @@
+{
+  "domain": "dpd_assist",
+  "name": "DPD Browser-Hilfe",
+  "version": "1.0.0",
+  "dependencies": ["websocket_api", "ai_task", "media_source"],
+  "requirements": [],
+  "codeowners": [],
+  "iot_class": "local_push"
+}

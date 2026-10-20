@@ -1,0 +1,17 @@
+dpd_assist:
+  ai_entity: ai_task.openai_ai_task
+script:
+  dpd_captcha_vorschau_holen:
+    alias: DPD CAPTCHA Vorschau holen
+    description: Fordert die Vorschau im geöffneten Paket-Dashboard an. Löst kein CAPTCHA.
+    icon: mdi:image-search-outline
+    mode: single
+    sequence:
+      - event: dpd_assist_preview_requested
+  dpd_captcha_bearbeiten:
+    alias: DPD Dieses CAPTCHA bearbeiten
+    description: Öffnet die Bestätigung für die aktuelle Vorschau im Paket-Dashboard.
+    icon: mdi:shield-check-outline
+    mode: single
+    sequence:
+      - event: dpd_assist_solve_requested

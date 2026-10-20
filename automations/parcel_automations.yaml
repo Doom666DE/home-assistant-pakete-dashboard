@@ -1,0 +1,279 @@
+- id: pakete_tracking_aus_email
+  alias: 'Pakete: Trackingnummern aus E-Mails (GLS/UPS)'
+  description: 'Liest neue Mail-Nachrichten und trägt GLS- und UPS-Trackingnummern
+    automatisch bei HA Parcel ein. Drei Stufen: (1) UPS-Nummern am festen Format 1Z
+    + 16 Zeichen, (2) GLS-Nummern aus dem Tracking-Link, (3) KI-Fallback (OpenAI AI
+    Task) nur für Versandmails, die GLS oder UPS erwähnen und in denen Stufe 1 und
+    2 nichts gefunden haben. DHL, DPD, Hermes und Amazon werden hier bewusst NICHT
+    ausgewertet: Sie laufen über den Konto-Login. Amazon bietet keinen Import einzelner
+    Trackingnummern; GLS-/UPS-Nummern aus Amazon-Versandmails werden weiterhin beim
+    tatsächlichen Paketdienst eingetragen. Einzelne DHL- oder Hermes-Nummern lassen
+    sich über das Formular in der Pakete-Ansicht von Hand eintragen.'
+  mode: queued
+  triggers:
+  - alias: 'Auslöser: Im IMAP-Postfach ist eine Nachricht eingegangen (Ereignis der
+      IMAP-Integration)'
+    trigger: event
+    event_data:
+      username: mail@example.invalid
+    event_type: imap_content
+  conditions:
+  - alias: 'Bedingung: Nur beim ersten Auftauchen einer Mail weitermachen, nicht bei
+      jeder erneuten Meldung derselben Mail'
+    condition: template
+    value_template: '{{ trigger.event.data.initial | default(false) }}'
+  actions:
+  - alias: '1. Suchmuster festlegen: UPS-Nummernformat, GLS-Tracking-Link sowie Stichwörter
+      für Dienst und Versand'
+    variables:
+      carrier_re: (?i)\b(gls|ups)\b
+      gls_re: (?i)gls[-a-z0-9.]*\.(?:de|eu|com|net|nl)/[^\s"<>]{0,300}?(?:match|trackingNumber|parcelNo|txtRefNo|trackid|paketnummer)(?:=|%3D)([A-Z0-9]{8,20})
+      ship_re: (?i)(sendung|versand|paket|tracking|shipment|shipped|zustell|delivery|parcel)
+      ups_re: (?<![A-Z0-9])(1Z[0-9A-Z]{16})(?![A-Z0-9])
+  - alias: 2. Vollständigen Mailtext abrufen (das Ereignis selbst enthält nur die
+      ersten 2 kB)
+    action: imap.fetch
+    continue_on_error: true
+    data:
+      entry: '{{ trigger.event.data.entry_id }}'
+      uid: '{{ trigger.event.data.uid }}'
+    response_variable: mail
+  - alias: 3. Text, Betreff und Absender bereitlegen (fällt auf den gekürzten Ereignistext
+      zurück, wenn der Abruf scheitert)
+    variables:
+      body: '{{ (mail.text if (mail is defined and mail and mail.text) else trigger.event.data.text)
+        | default('''', true) }}'
+      sender: '{{ trigger.event.data.sender | default('''', true) }}'
+      subject: '{{ trigger.event.data.subject | default('''', true) }}'
+  - alias: '4. Nummern per Muster suchen: UPS in Betreff und Text, GLS im Tracking-Link'
+    variables:
+      gls_codes: '{{ body | string | regex_findall(gls_re) | map(''upper'') | unique
+        | list }}'
+      hay: '{{ sender ~ '' '' ~ subject ~ '' '' ~ body }}'
+      ups_codes: '{{ (subject ~ '' '' ~ body) | regex_findall(ups_re) | unique | list
+        }}'
+  - alias: 5. Jede gefundene UPS-Nummer eintragen und im Logbuch vermerken
+    repeat:
+      for_each: '{{ ups_codes }}'
+      sequence:
+      - alias: UPS-Sendung verfolgen
+        action: ups.track_parcel
+        continue_on_error: true
+        data:
+          tracking_code: '{{ repeat.item }}'
+      - alias: Logbuch-Eintrag schreiben
+        action: logbook.log
+        data:
+          name: Paket-Tracking
+          message: UPS {{ repeat.item }} aus E-Mail übernommen ({{ subject }})
+  - alias: 6. Jede gefundene GLS-Nummer eintragen und im Logbuch vermerken
+    repeat:
+      for_each: '{{ gls_codes }}'
+      sequence:
+      - alias: GLS-Sendung verfolgen
+        action: gls.track_parcel
+        continue_on_error: true
+        data:
+          tracking_code: '{{ repeat.item }}'
+      - alias: Logbuch-Eintrag schreiben
+        action: logbook.log
+        data:
+          name: Paket-Tracking
+          message: GLS {{ repeat.item }} aus E-Mail übernommen ({{ subject }})
+  - alias: '7. KI-Fallback: nur wenn die Muster nichts fanden und die Mail GLS oder
+      UPS sowie ein Versand-Stichwort enthält'
+    if:
+    - alias: Nichts gefunden, aber die Mail sieht nach einer GLS- oder UPS-Versandmail
+        aus
+      condition: template
+      value_template: '{{ ups_codes | length == 0 and gls_codes | length == 0 and
+        hay is search(carrier_re) and hay is search(ship_re) }}'
+    then:
+    - alias: '7a. OpenAI fragen: Welcher Dienst (gls, ups oder none) und welche Sendungsnummer?
+        Es gehen nur die ersten 6000 Zeichen raus'
+      action: ai_task.generate_data
+      continue_on_error: true
+      data:
+        entity_id: ai_task.openai_ai_task
+        instructions: 'Du bekommst eine E-Mail. Entscheide, ob sie eine Versandbenachrichtigung
+          für ein Paket ist, das mit GLS oder UPS verschickt wird, und gib die Sendungsnummer
+          (Trackingnummer) exakt so zurück, wie sie in der Mail steht. Keine Bestell-,
+          Rechnungs- oder Kundennummern. Wenn keine GLS- oder UPS-Sendungsnummer enthalten
+          ist oder du unsicher bist, gib carrier ''none'' und eine leere tracking_code
+          zurück. Erfinde nichts.
+
+
+          Absender: {{ sender }}
+
+          Betreff: {{ subject }}
+
+
+          {{ (body | string)[:6000] }}'
+        structure:
+          carrier:
+            description: 'Paketdienst: gls, ups oder none'
+            required: true
+            selector:
+              select:
+                options:
+                - gls
+                - ups
+                - none
+          tracking_code:
+            description: Sendungsnummer exakt wie in der Mail, sonst leer
+            required: false
+            selector:
+              text: {}
+        task_name: Trackingnummer aus Versandmail
+      response_variable: ai
+    - alias: 7b. Antwort der KI auslesen und die Nummer bereinigen
+      variables:
+        ai_carrier: '{{ ai.data.carrier | default(''none'') if (ai is defined and
+          ai and ai.data is defined) else ''none'' }}'
+        ai_code: '{{ (ai.data.tracking_code | default('''', true) | string | upper
+          | replace('' '', '''')) if (ai is defined and ai and ai.data is defined)
+          else '''' }}'
+    - alias: '7c. Antwort prüfen: Die Nummer muss wörtlich in der Mail stehen, 8 bis
+        20 Zeichen lang sein und bei UPS dem 1Z-Format entsprechen'
+      variables:
+        ai_ok: '{% set c = ai_code | string %}{{ ai_carrier in [''gls'', ''ups'']
+          and c | length >= 8 and c | length <= 20 and c in (body | string | upper
+          | replace('' '', '''')) and (ai_carrier != ''ups'' or c is match(''1Z[0-9A-Z]{16}$''))
+          }}'
+    - alias: 7d. Nur eine geprüfte Nummer beim passenden Dienst eintragen
+      choose:
+      - alias: Geprüfte GLS-Nummer
+        conditions:
+        - condition: template
+          value_template: '{{ ai_ok and ai_carrier == ''gls'' }}'
+        sequence:
+        - alias: GLS-Sendung verfolgen
+          action: gls.track_parcel
+          continue_on_error: true
+          data:
+            tracking_code: '{{ ai_code }}'
+        - alias: Logbuch-Eintrag schreiben
+          action: logbook.log
+          data:
+            name: Paket-Tracking
+            message: GLS {{ ai_code }} per KI aus E-Mail übernommen ({{ subject }})
+      - alias: Geprüfte UPS-Nummer
+        conditions:
+        - condition: template
+          value_template: '{{ ai_ok and ai_carrier == ''ups'' }}'
+        sequence:
+        - alias: UPS-Sendung verfolgen
+          action: ups.track_parcel
+          continue_on_error: true
+          data:
+            tracking_code: '{{ ai_code }}'
+        - alias: Logbuch-Eintrag schreiben
+          action: logbook.log
+          data:
+            name: Paket-Tracking
+            message: UPS {{ ai_code }} per KI aus E-Mail übernommen ({{ subject }})
+- id: pakete_tracking_aufraeumen
+  alias: 'Pakete: Zugestellte Sendungen austragen'
+  description: Trägt manuell verfolgte Sendungen drei Tage nach Zustellung aus. Zusätzlich
+    prüft eine Nachholrunde alle sechs Stunden die gespeicherten Zustellzeiten, damit
+    ein Home-Assistant-Neustart die Bereinigung nicht dauerhaft verhindert. Ohne bestätigte
+    Zustellzeit wird nichts automatisch entfernt. Kontosendungen bleiben beim jeweiligen
+    Anbieter.
+  mode: parallel
+  triggers:
+  - id: gls
+    alias: 'Auslöser: GLS meldet eine Sendung als zugestellt'
+    trigger: event
+    event_type: gls_parcel_delivered
+  - id: ups
+    alias: 'Auslöser: UPS meldet eine Sendung als zugestellt'
+    trigger: event
+    event_type: ups_parcel_delivered
+  - id: dhl
+    alias: 'Auslöser: DHL meldet eine Sendung als zugestellt'
+    trigger: event
+    event_type: dhl_parcel_delivered
+  - id: hermes
+    alias: 'Auslöser: Hermes meldet eine Sendung als zugestellt'
+    trigger: event
+    event_type: hermes_parcel_delivered
+  - trigger: time_pattern
+    hours: /6
+    minutes: '15'
+    id: catchup
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.id == ''catchup'' or (trigger.event.data.barcode is
+      defined and trigger.event.data.barcode) }}'
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.id == ''catchup'' }}'
+      sequence:
+      - variables:
+          due_parcels: '{% set ns = namespace(items=[]) %}
+
+            {% for carrier, entity in [(''dhl'',''sensor.dhl_germany_zugestellte_pakete''),(''hermes'',''sensor.hermes_germany_manuell_zugestellte_pakete''),(''gls'',''sensor.gls_germany_zugestellte_pakete''),(''ups'',''sensor.ups_germany_delivered_parcels'')]
+            %}
+
+            {% for p in state_attr(entity, ''parcels'') or [] %}
+
+            {% set ts = as_timestamp(p.delivered_at | default(none), none) %}
+
+            {% if p.barcode and p.delivered and ts is not none and ts <= as_timestamp(now())
+            - 3 * 86400 %}
+
+            {% set ns.items = ns.items + [dict(carrier=carrier, code=p.barcode)] %}
+
+            {% endif %}{% endfor %}{% endfor %}
+
+            {{ ns.items }}'
+      - repeat:
+          for_each: '{{ due_parcels }}'
+          sequence:
+          - choose:
+            - alias: 'DHL: nur im Eintrag „DHL Tracking Codes“ austragen'
+              conditions:
+              - condition: template
+                value_template: '{{ repeat.item.carrier == ''dhl'' }}'
+              sequence:
+              - alias: DHL-Sendung austragen
+                action: dhl.untrack_parcel
+                continue_on_error: true
+                data:
+                  config_entry_id: 01M4EQPAR2PE4FTG5VXCGF5M23
+                  tracking_code: '{{ repeat.item.code }}'
+            default:
+            - action: '{{ repeat.item.carrier }}.untrack_parcel'
+              continue_on_error: true
+              data:
+                tracking_code: '{{ repeat.item.code }}'
+    default:
+    - alias: 1. Sendungsnummer und Dienst merken
+      variables:
+        carrier: '{{ trigger.id }}'
+        code: '{{ trigger.event.data.barcode }}'
+    - alias: 2. Drei Tage warten, damit die Sendung so lange unter „Zuletzt zugestellt“
+        sichtbar bleibt
+      delay:
+        days: 3
+    - alias: 3. Sendung beim jeweiligen Dienst austragen
+      choose:
+      - alias: 'DHL: nur im Eintrag „DHL Tracking Codes“ austragen'
+        conditions:
+        - condition: template
+          value_template: '{{ carrier == ''dhl'' }}'
+        sequence:
+        - alias: DHL-Sendung austragen
+          action: dhl.untrack_parcel
+          continue_on_error: true
+          data:
+            config_entry_id: 01M4EQPAR2PE4FTG5VXCGF5M23
+            tracking_code: '{{ code }}'
+      default:
+      - alias: GLS-, UPS- oder Hermes-Sendung austragen
+        action: '{{ carrier }}.untrack_parcel'
+        continue_on_error: true
+        data:
+          tracking_code: '{{ code }}'

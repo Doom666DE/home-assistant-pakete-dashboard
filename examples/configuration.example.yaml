@@ -1,0 +1,6 @@
+# Merge these sections into the existing configuration; do not replace it.
+homeassistant:
+  packages: !include_dir_named packages
+frontend:
+  extra_module_url:
+    - /local/pakete/dpd-assist-card.js

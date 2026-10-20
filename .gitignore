@@ -1,0 +1,17 @@
+# Authentication, runtime data, local configuration, captures
+secrets.yaml
+.env
+.env.*
+!.env.example
+.storage/
+__pycache__/
+*.pyc
+*.db*
+*.log*
+*.har
+*.pem
+*.key
+*.zip
+node_modules/
+local/
+captures/

@@ -1,0 +1,424 @@
+{#- Makros fuer die Ansicht "Pakete".
+    Einbinden mit: {% from 'pakete.jinja' import aktiv, held, ... %}
+    Nach Aenderungen: Aktion homeassistant.reload_custom_templates ausfuehren.
+    Hinweis: Die Markdown-Karte entfernt class-Attribute. Das Styling der Karten haengt deshalb an der
+    HTML-Struktur (Reihenfolge der Elemente) und am Status-Icon, nicht an den Klassennamen hier. -#}
+
+{#- Status: [Text, Icon, Farbe, Fortschritt 1-4]. Farbe und Fortschritt setzt das CSS der Karte anhand des Icons. -#}
+{%- set status_meta = {
+  'registered': ['Angekündigt', 'mdi:tag-outline', 'grau', 1],
+  'in_transit': ['Unterwegs', 'mdi:truck-fast-outline', 'blau', 2],
+  'out_for_delivery': ['In Zustellung', 'mdi:truck-delivery', 'orange', 3],
+  'at_pickup_point': ['Abholbereit', 'mdi:storefront-outline', 'lila', 3],
+  'delivered': ['Zugestellt', 'mdi:check-circle', 'gruen', 4],
+  'returning': ['Rücksendung', 'mdi:keyboard-return', 'rot', 2],
+  'problem': ['Problem', 'mdi:alert-circle', 'rot', 2],
+  'unknown': ['Unbekannt', 'mdi:help-circle-outline', 'grau', 1]
+} -%}
+
+{#- Reihenfolge in der Liste der aktiven Sendungen -#}
+{%- set status_prio = {
+  'out_for_delivery': 0, 'at_pickup_point': 1, 'problem': 2, 'in_transit': 3,
+  'returning': 4, 'registered': 5, 'unknown': 6
+} -%}
+
+{%- set agg = 'sensor.parcel_aggregator_' -%}
+
+{#- Sensoren je Paketdienst: HIER DEINE EIGENEN ENTITAETEN EINTRAGEN.
+    DHL und Hermes haben je zwei Eintraege: das Konto und die von Hand eingetragenen Trackingnummern. -#}
+{%- set dienste = {
+  'amazon': {
+    'name': 'Amazon',
+    'ein': ['sensor.amazon_germany_eingehende_pakete'],
+    'shop': ['sensor.amazon_germany_unterwegs_zur_abholstelle'],
+    'abhol': ['sensor.amazon_germany_abholbereit'],
+    'zu': ['sensor.amazon_germany_zugestellte_pakete'],
+    'aus': [],
+    'stand': ['sensor.amazon_germany_letzte_erfolgreiche_aktualisierung']
+  },
+  'dhl': {
+    'name': 'DHL',
+    'ein': ['sensor.dhl_germany_eingehende_pakete'],
+    'shop': [],
+    'abhol': ['sensor.dhl_germany_abholbereit'],
+    'zu': ['sensor.dhl_germany_zugestellte_pakete'],
+    'aus': ['sensor.dhl_germany_ausgehende_pakete'],
+    'an': ['sensor.dhl_germany_ausgehende_zugestellte_pakete'],
+    'stand': ['sensor.dhl_germany_letzte_erfolgreiche_aktualisierung']
+  },
+  'dpd': {
+    'name': 'DPD',
+    'ein': ['sensor.dpd_germany_eingehende_pakete'],
+    'shop': ['sensor.dpd_germany_unterwegs_zum_parcelshop'],
+    'abhol': ['sensor.dpd_germany_abholbereit'],
+    'zu': ['sensor.dpd_germany_zugestellte_pakete'],
+    'aus': ['sensor.dpd_germany_ausgehende_pakete'],
+    'an': ['sensor.dpd_germany_ausgehende_zugestellte_pakete'],
+    'stand': ['sensor.dpd_germany_letzte_erfolgreiche_aktualisierung']
+  },
+  'gls': {
+    'name': 'GLS',
+    'ein': ['sensor.gls_germany_eingehende_pakete'],
+    'shop': ['sensor.gls_germany_unterwegs_zum_parcelshop'],
+    'abhol': ['sensor.gls_germany_abholbereit'],
+    'zu': ['sensor.gls_germany_zugestellte_pakete'],
+    'aus': [],
+    'stand': ['sensor.gls_germany_letzte_erfolgreiche_aktualisierung']
+  },
+  'hermes': {
+    'name': 'HERMES',
+    'ein': ['sensor.hermes_germany_eingehende_pakete', 'sensor.hermes_germany_manuell_eingehende_pakete'],
+    'shop': [],
+    'abhol': ['sensor.hermes_germany_abholbereit', 'sensor.hermes_germany_manuell_abholbereit'],
+    'zu': ['sensor.hermes_germany_zugestellte_pakete', 'sensor.hermes_germany_manuell_zugestellte_pakete'],
+    'aus': [],
+    'stand': ['sensor.hermes_germany_letzte_erfolgreiche_aktualisierung', 'sensor.hermes_germany_manuell_letzte_erfolgreiche_aktualisierung']
+  },
+  'ups': {
+    'name': 'UPS',
+    'ein': ['sensor.ups_germany_incoming_parcels'],
+    'shop': [],
+    'abhol': ['sensor.ups_germany_awaiting_pickup'],
+    'zu': ['sensor.ups_germany_delivered_parcels'],
+    'aus': [],
+    'stand': ['sensor.ups_germany_last_successful_update']
+  }
+} -%}
+
+{#- Logo eines Dienstes aus /config/www/pakete/ (dhl.png, hermes.png, gls.png, dpd.png, ups.png, sonst alle.png) -#}
+{%- macro logo_url(carrier) -%}
+{%- set c = (carrier or '') | lower -%}
+{%- set ns = namespace(name='alle') -%}
+{%- for k in ['amazon', 'dhl', 'hermes', 'gls', 'dpd', 'ups'] if k in c -%}{%- set ns.name = k -%}{%- endfor -%}
+/local/pakete/{{ ns.name }}.png
+{%- endmacro -%}
+
+{%- macro summe(ids) -%}
+{%- set ns = namespace(n=0) -%}
+{%- for id in ids -%}{%- set ns.n = ns.n + (states(id) | int(0)) -%}{%- endfor -%}
+{{ ns.n }}
+{%- endmacro -%}
+
+{%- macro vor(ts) -%}
+{%- set s = (now() - ts).total_seconds() -%}
+{%- if s < 90 -%}gerade eben
+{%- elif s < 3600 -%}vor {{ (s / 60) | round | int }} Min.
+{%- elif s < 86400 -%}vor {{ (s / 3600) | round | int }} Std.
+{%- else -%}vor {{ (s / 86400) | round | int }} Tagen
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro tag(ts) -%}
+{%- set d = as_datetime(ts) | as_local -%}
+{%- set diff = (d.date() - now().date()).days -%}
+{%- if diff == 0 -%}Heute
+{%- elif diff == 1 -%}Morgen
+{%- elif diff == -1 -%}Gestern
+{%- else -%}{{ ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][d.weekday()] }}, {{ d.strftime('%d.%m.') }}
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro uhr(ts) -%}
+{%- set d = as_datetime(ts) | as_local -%}
+{%- if d.hour != 0 or d.minute != 0 -%}{{ d.strftime('%H:%M') }}{%- endif -%}
+{%- endmacro -%}
+
+{#- Zeitangabe einer Sendung: Zustellzeit oder geplantes Zeitfenster -#}
+{%- macro zeit(p, an=false) -%}
+{%- set hf = namespace(value={}) -%}
+{%- if (p.carrier or '') | lower == 'hermes' and not p.delivered and p.status != 'at_pickup_point' -%}
+{%- for id in dienste.hermes.ein -%}
+{%- for source in state_attr(id, 'parcels') or [] if source.barcode == p.barcode -%}
+{%- set hf.value = (source.raw | default({}, true)).get('forecast') or {} -%}
+{%- endfor -%}{%- endfor -%}
+{%- endif -%}
+{%- set hf_from = as_datetime(hf.value.get('deliveryTimeFromUTC'), none) -%}
+{%- set hf_to = as_datetime(hf.value.get('deliveryTimeToUTC'), none) -%}
+{%- set pf = as_datetime(p.planned_from, none) -%}
+{%- set pt = as_datetime(p.planned_to, none) -%}
+{%- if p.delivered and p.delivered_at -%}
+{{ tag(p.delivered_at) }}{% if uhr(p.delivered_at) %}, {{ uhr(p.delivered_at) }}{% endif %}
+{%- elif p.status == 'at_pickup_point' -%}Liegt bereit
+{%- elif p.delivered -%}{{ 'Angekommen' if an else 'Zugestellt' }}
+{%- elif pf and pt and (pf | as_local).date() != (pt | as_local).date() -%}
+{{ tag(p.planned_from) }}–{{ tag(p.planned_to) }}
+{%- elif pf and pt and uhr(p.planned_from) and uhr(p.planned_to) and uhr(p.planned_from) != uhr(p.planned_to) -%}
+{{ tag(p.planned_from) }}, {{ uhr(p.planned_from) }}–{{ uhr(p.planned_to) }}
+{%- elif pf -%}
+{{ tag(p.planned_from) }}{% if uhr(p.planned_from) %}, {{ uhr(p.planned_from) }}{% endif %}
+{%- elif pt -%}Bis {{ tag(p.planned_to) }}{% if uhr(p.planned_to) %}, {{ uhr(p.planned_to) }}{% endif %}
+{%- elif hf_from and hf_to and hf_to >= hf_from -%}
+{%- set von = hf_from | as_local -%}{%- set bis = hf_to | as_local -%}
+{%- set monate = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'] -%}
+{% if von.date() == bis.date() %}{{ von.day }}. {{ monate[von.month-1] }}{% elif von.year == bis.year and von.month == bis.month %}{{ von.day }}.-{{ bis.day }}. {{ monate[bis.month-1] }}{% else %}{{ von.day }}. {{ monate[von.month-1] }}-{{ bis.day }}. {{ monate[bis.month-1] }}{% endif %}
+{%- else -%}Liefertermin noch nicht gemeldet
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro absender(p) -%}
+{%- set records = state_attr('sensor.dpd_zusatzinformationen', 'records') or {} -%}
+{{ p.sender or records.get(p.barcode | string | upper, {}).get('sender', '') or ('Amazon' if (p.carrier or '') | lower == 'amazon' else 'Unbekannter Absender') }}
+{%- endmacro -%}
+
+{#- Eine Sendungsliste als HTML-Block ohne Leerzeilen, damit Markdown ihn unveraendert durchreicht.
+    an=true zeigt den Empfaenger statt des Absenders (ausgehende Sendungen). -#}
+{%- macro liste(parcels, leer='Keine Sendungen', leer_icon='mdi:package-variant', an=false) -%}
+<div class="pkl">
+{%- if not parcels -%}
+<div class="leer"><ha-icon icon="{{ leer_icon }}"></ha-icon><span>{{ leer }}</span></div>
+{%- else -%}
+{%- for p in parcels -%}
+{%- set m = status_meta.get(p.status, status_meta.unknown) -%}
+{%- if (p.delivered or p.status == 'delivered') and p.status != 'at_pickup_point' -%}
+{%- set m = ['Angekommen' if an else 'Zugestellt', 'mdi:check-circle', 'gruen', 4] -%}
+{%- endif -%}
+{%- set is_dpd = (p.carrier or '') | lower == 'dpd' -%}
+{#- Zusatzinformationen werden je Sendungsnummer lokal gespeichert, unabhaengig von HACS. -#}
+{%- set dpd_records = state_attr('sensor.dpd_zusatzinformationen', 'records') or {} -%}
+{%- set confirmed_sender = dpd_records.get(p.barcode | string, {}).get('sender', '') if is_dpd else '' -%}
+{%- if is_dpd and p.status == 'registered' -%}
+{%- set m = ['Auftragsdaten übermittelt', m[1], m[2], m[3]] -%}
+{%- endif -%}
+{%- if an -%}{%- set titel = ('An ' ~ p.receiver) if p.receiver else 'Ausgehende Sendung' -%}
+{%- else -%}{%- set titel = absender(p) -%}{%- endif -%}
+{%- set tracking_url = p.url or '' -%}
+{%- if (p.carrier or '') | lower == 'hermes' and p.barcode -%}
+{%- set tracking_url = 'https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation/#' ~ (p.barcode | string | urlencode) -%}
+{%- endif -%}
+{%- if not tracking_url and (p.carrier or '') | lower == 'dpd' and p.barcode -%}
+{%- set tracking_url = 'https://tracking.dpd.de/status/de_DE/parcel/' ~ (p.barcode | string | urlencode) -%}
+{%- endif -%}
+<a class="pk f-{{ m[2] }}" href="{{ (tracking_url or '#') | e }}">
+<img class="lg" src="{{ logo_url(p.carrier) }}" alt="">
+<div class="tx">
+<div class="hd">{{ titel | e }}</div>
+<div class="sub">{{ (p.carrier or '') | replace(' (DE)', '') | e }} · <span class="nr">{{ p.barcode | e }}</span></div>
+{%- if is_dpd and not p.sender and not confirmed_sender -%}
+{%- set checks = state_attr('sensor.dpd_zusatzinformationen', 'website_checks') or {} -%}
+{%- if checks.get(p.barcode | string, {}).get('result') == 'verification_required' -%}
+<div class="sub">Absenderdetails: Website-Prüfung erforderlich</div>
+{%- endif -%}
+{%- endif -%}
+{%- if p.pickup_point -%}<div class="sub ort"><ha-icon icon="mdi:storefront-outline"></ha-icon>{{ p.pickup_point | e }}</div>{%- endif -%}
+<div class="bar">{%- for i in range(1, 5) -%}<i class="{{ 'an' if i <= m[3] else 'aus' }}"></i>{%- endfor -%}</div>
+</div>
+<div class="rt"><span class="pill"><ha-icon icon="{{ m[1] }}"></ha-icon>{{ m[0] }}</span><span class="zt">{{ zeit(p, an) }}</span></div>
+</a>
+{%- endfor -%}
+{%- endif -%}
+</div>
+{%- endmacro -%}
+
+{#- Amazon ist in dieser Aggregator-Version nicht enthalten. Gemeinsame Listen
+    vergleichen vorhandene Trackingnummern; Kontopakete ohne Trackingnummer
+    koennen nicht sicher mit Sendungen anderer Dienste abgeglichen werden. -#}
+{%- set amazon_buckets = {
+  'incoming_parcels': 'sensor.amazon_germany_eingehende_pakete',
+  'en_route_to_pickup_point': 'sensor.amazon_germany_unterwegs_zur_abholstelle',
+  'awaiting_pickup': 'sensor.amazon_germany_abholbereit',
+  'delivered_parcels': 'sensor.amazon_germany_zugestellte_pakete'
+} -%}
+{%- macro pakete(bucket) -%}
+{%- set ns = namespace(l=[], seen=[]) -%}
+{%- for p in state_attr(agg ~ bucket, 'parcels') or [] -%}
+{%- set key = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if not key or key not in ns.seen -%}
+{%- set ns.l = ns.l + [p] -%}{%- set ns.seen = ns.seen + [key] -%}
+{%- endif -%}{%- endfor -%}
+{%- if bucket in amazon_buckets -%}
+{%- for p in state_attr(amazon_buckets[bucket], 'parcels') or [] -%}
+{# Amazon liefert gelegentlich kein delivered_at, obwohl das Zustellereignis datiert ist. #}
+{%- if bucket == 'delivered_parcels' and not p.delivered_at -%}
+{%- set datum = namespace(ts=0, value=none) -%}
+{%- for event in (p.raw | default({}, true)).get('events', []) or [] -%}
+{%- set message = (event.message | default('', true)) | lower | trim | trim('.!') -%}
+{%- set ts = as_timestamp(event.timestamp | default(none), 0) -%}
+{%- if message in ['zugestellt', 'an den kunden zugestellt', 'delivered to customer', 'delivered to letterbox', 'lieferung in der nähe von haustür oder veranda abgelegt'] and ts > datum.ts -%}
+{%- set datum.ts = ts -%}{%- set datum.value = event.timestamp -%}
+{%- endif -%}{%- endfor -%}
+{%- if datum.value -%}{%- set p = dict(p, delivered_at=datum.value) -%}{%- endif -%}
+{%- endif -%}
+{%- set key = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if not key or key not in ns.seen -%}
+{%- set ns.l = ns.l + [dict(p, sender=p.sender or 'Amazon')] -%}
+{%- set ns.seen = ns.seen + [key] -%}
+{%- endif -%}{%- endfor -%}{%- endif -%}
+{%- if bucket == 'incoming_parcels' -%}
+{%- set filtered = namespace(l=[], excluded=[]) -%}
+{%- for other in ['en_route_to_pickup_point', 'awaiting_pickup', 'delivered_parcels'] -%}
+{%- for p in pakete(other) | from_json -%}
+{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if code -%}{%- set filtered.excluded = filtered.excluded + [code] -%}{%- endif -%}
+{%- endfor -%}{%- endfor -%}
+{%- for p in ns.l -%}
+{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if p.status not in ['at_pickup_point', 'delivered'] and not p.delivered and (not code or code not in filtered.excluded) -%}
+{%- set filtered.l = filtered.l + [p] -%}
+{%- endif -%}{%- endfor -%}
+{{ filtered.l | to_json }}
+{%- else -%}{{ ns.l | to_json }}{%- endif -%}
+{%- endmacro -%}
+{%- macro anzahl(bucket) -%}
+{{ pakete(bucket) | from_json | length }}
+{%- endmacro -%}
+
+{#- Aktive Sendungen aller Dienste: dringendste zuerst, dann nach Termin -#}
+{%- macro aktiv() -%}
+{%- set ns = namespace(l=[], seen=[]) -%}
+{%- for s in ['incoming_parcels', 'en_route_to_pickup_point', 'awaiting_pickup'] -%}
+{%- for p in pakete(s) | from_json -%}
+{%- set key = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if not key or key not in ns.seen -%}
+{%- set ns.seen = ns.seen + [key] -%}
+{%- set ns.l = ns.l + [[status_prio.get(p.status, 6), p.planned_from or '9999', p]] -%}
+{%- endif -%}{%- endfor -%}
+{%- endfor -%}
+{{ liste(ns.l | sort(attribute='1') | sort(attribute='0') | map(attribute='2') | list, 'Keine aktiven Sendungen', 'mdi:package-variant-closed-check') }}
+{%- endmacro -%}
+
+{#- Zuletzt zugestellte Sendungen, neueste zuerst -#}
+{%- macro zugestellt(n=none) -%}
+{%- set ns = namespace(l=[]) -%}
+{%- for p in pakete('delivered_parcels') | from_json -%}
+{%- set ns.l = ns.l + [[as_timestamp(p.delivered_at, 0), p]] -%}
+{%- endfor -%}
+{%- set sortiert = ns.l | sort(attribute='0', reverse=true) | map(attribute='1') | list -%}
+{{ liste(sortiert if n is none else sortiert[:n], 'In den letzten Tagen wurde nichts zugestellt', 'mdi:package-variant') }}
+{%- endmacro -%}
+
+{#- Ausgehende Sendungen: erst die laufenden, dann die angekommenen -#}
+{%- macro ausgehend() -%}
+{{ liste((state_attr(agg ~ 'outgoing_parcels', 'parcels') or []) + (state_attr(agg ~ 'outgoing_delivered_parcels', 'parcels') or []), 'Keine ausgehenden Sendungen', 'mdi:package-up', true) }}
+{%- endmacro -%}
+
+{#- Grosse Kopfkarte: naechste Zustellung -#}
+{%- macro held(p=none) -%}
+{%- set kandidat = namespace(p=state_attr(agg ~ 'next_delivery', 'parcel'), ts=none) -%}
+{%- set kandidat.ts = as_timestamp(kandidat.p.planned_from, none) if kandidat.p else none -%}
+{%- for a in pakete('incoming_parcels') | from_json if a.planned_from -%}
+{%- set ts = as_timestamp(a.planned_from, none) -%}
+{%- if ts is not none and (kandidat.ts is none or ts < kandidat.ts) -%}
+{%- set kandidat.p = a -%}{%- set kandidat.ts = ts -%}
+{%- endif -%}{%- endfor -%}
+{%- set p = p if p else kandidat.p -%}
+{%- set ein = anzahl('incoming_parcels') | int(0) -%}
+{%- set abhol = anzahl('awaiting_pickup') | int(0) -%}
+<div class="held">
+{%- if p -%}
+{%- set m = status_meta.get(p.status, status_meta.unknown) -%}
+<img class="hlogo" src="{{ logo_url(p.carrier) }}" alt="">
+<div class="htx">
+<div class="ueber">Nächste Zustellung</div>
+<div class="gross">{{ zeit(p) }}</div>
+<div class="von">{{ absender(p) | e }} · {{ (p.carrier or '') | replace(' (DE)', '') | e }}</div>
+<div class="hpills"><span class="pill"><ha-icon icon="{{ m[1] }}"></ha-icon>{{ m[0] }}</span>
+{%- if ein > 1 -%}<span class="pill">+{{ ein - 1 }} weitere unterwegs</span>{%- endif -%}
+{%- if abhol > 0 -%}<span class="pill"><ha-icon icon="mdi:storefront-outline"></ha-icon>{{ abhol }} abholbereit</span>{%- endif -%}
+</div>
+</div>
+{%- elif ein > 0 or abhol > 0 -%}
+<div class="hicon"><ha-icon icon="mdi:package-variant-closed"></ha-icon></div>
+<div class="htx">
+<div class="ueber">Pakete</div>
+<div class="gross">{{ ein }} unterwegs</div>
+<div class="von">Noch kein Zustelltermin bekannt</div>
+{%- if abhol > 0 -%}<div class="hpills"><span class="pill"><ha-icon icon="mdi:storefront-outline"></ha-icon>{{ abhol }} abholbereit</span></div>{%- endif -%}
+</div>
+{%- else -%}
+<div class="hicon"><ha-icon icon="mdi:package-variant-closed-check"></ha-icon></div>
+<div class="htx">
+<div class="ueber">Pakete</div>
+<div class="gross">Nichts unterwegs</div>
+<div class="von">Sobald ein Paket angekündigt wird, erscheint es hier.</div>
+</div>
+{%- endif -%}
+</div>
+{%- endmacro -%}
+
+{#- Texte fuer die Paketdienst-Karten -#}
+{# Unterwegs schliesst bereits abholbereite, zugestellte und separat zum Shop gezaehlte Sendungen aus. #}
+{%- macro dienst_unterwegs(key) -%}
+{%- set d = dienste[key] -%}
+{%- set ns = namespace(n=0, seen=[], excluded=[]) -%}
+{%- for id in d.shop + d.abhol + d.zu -%}
+{%- for p in state_attr(id, 'parcels') or [] -%}
+{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if code -%}{%- set ns.excluded = ns.excluded + [code] -%}{%- endif -%}
+{%- endfor -%}{%- endfor -%}
+{%- for id in d.ein -%}
+{%- for p in state_attr(id, 'parcels') or [] -%}
+{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
+{%- if p.status not in ['at_pickup_point', 'delivered'] and not p.delivered and (not code or (code not in ns.excluded and code not in ns.seen)) -%}
+{%- set ns.n = ns.n + 1 -%}{%- set ns.seen = ns.seen + [code] -%}
+{%- endif -%}{%- endfor -%}{%- endfor -%}
+{{ ns.n }}
+{%- endmacro -%}
+{%- macro dienst_zeile(key) -%}
+{%- set d = dienste[key] -%}
+{%- set teile = [
+  [dienst_unterwegs(key) | int, 'unterwegs'],
+  [summe(d.shop) | int, 'zum Paketshop'],
+  [summe(d.abhol) | int, 'abholbereit'],
+  [summe(d.zu) | int, 'zugestellt'],
+  [summe(d.aus) | int, 'ausgehend'],
+  [summe(d.get('an', [])) | int, 'angekommen']
+] | selectattr(0, 'gt', 0) | list -%}
+{%- if teile -%}
+{%- for t in teile -%}{{ t[0] }} {{ t[1] }}{{ ' · ' if not loop.last }}{%- endfor -%}
+{%- else -%}Keine Sendungen
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro dienst_stand(key) -%}
+{%- set ns = namespace(t=none) -%}
+{%- for id in dienste[key].stand -%}
+{%- set t = states(id) | as_datetime(none) -%}
+{%- if t and (ns.t is none or t > ns.t) -%}{%- set ns.t = t -%}{%- endif -%}
+{%- endfor -%}
+{%- if ns.t -%}Stand: {{ vor(ns.t) }}{%- elif key == 'ups' -%}Kein erfolgreicher Abruf gemeldet{%- else -%}Noch nicht abgefragt{%- endif -%}
+{%- endmacro -%}
+
+{#- Anzahl Sendungen eines Dienstes, die heute in Zustellung sind -#}
+{%- macro dienst_zustellung(key) -%}
+{%- set ns = namespace(n=0) -%}
+{%- for id in dienste[key].ein -%}
+{%- for p in state_attr(id, 'parcels') or [] if p.status == 'out_for_delivery' -%}{%- set ns.n = ns.n + 1 -%}{%- endfor -%}
+{%- endfor -%}
+{{ ns.n }}
+{%- endmacro -%}
+
+{#- Tabelle "Pakete nach Paketdienst" als echte Markdown-Tabelle mit Zeilenumbruechen.
+    Spaltenkoepfe sind dieselben Icons wie bei den Zaehler-Kacheln: unterwegs, zum Paketshop,
+    abholbereit, zugestellt, ausgehend. -#}
+{%- macro tabelle() -%}
+{%- set kopf = ['mdi:truck-fast-outline', 'mdi:map-marker-path', 'mdi:storefront-outline', 'mdi:package-variant-closed-check', 'mdi:package-up', 'mdi:check-all'] -%}
+{%- set ns = namespace(z=[], s=[0, 0, 0, 0, 0], k=[]) -%}
+{%- set bedeutungen = ['Unterwegs', 'Zum Paketshop', 'Abholbereit', 'Zugestellt', 'Ausgehend', 'Angekommen'] -%}
+{%- for i in kopf -%}{%- set label = bedeutungen[loop.index0] -%}{%- set ns.k = ns.k + ['<span class="status-kopf"><ha-icon icon="' ~ i ~ '"></ha-icon><span class="status-tooltip">' ~ label ~ '</span></span>'] -%}{%- endfor -%}
+{%- for key, d in dienste.items() -%}
+{%- set w = [dienst_unterwegs(key) | int, summe(d.shop) | int, summe(d.abhol) | int, summe(d.zu) | int, summe(d.aus) | int, summe(d.get('an', [])) | int] -%}
+{%- set ns.s = [ns.s[0] + w[0], ns.s[1] + w[1], ns.s[2] + w[2], ns.s[3] + w[3], ns.s[4] + w[4]] -%}
+{%- set zs = namespace(c=[]) -%}
+{%- for x in w -%}{%- set zs.c = zs.c + ['–' if x == 0 else '**' ~ x ~ '**'] -%}{%- endfor -%}
+{%- set ns.z = ns.z + ['| <img class="tl" src="' ~ logo_url(key) ~ '" width="24"> | ' ~ d.name ~ ' | ' ~ (zs.c | join(' | ')) ~ ' |'] -%}
+{%- endfor -%}
+{{ '|  | Dienst | ' ~ (ns.k | join(' | ')) ~ ' |\n| :-: | :-- | :-: | :-: | :-: | :-: | :-: | :-: |\n' ~ (ns.z | join('\n')) ~ '\n|  | Gesamt | **' ~ ([anzahl('incoming_parcels'), anzahl('en_route_to_pickup_point'), anzahl('awaiting_pickup'), anzahl('delivered_parcels'), anzahl('outgoing_parcels'), anzahl('outgoing_delivered_parcels')] | join('** | **')) ~ '** |' }}
+{%- endmacro -%}
+
+{#- Beispieldaten, um das Layout mit Sendungen zu pruefen: {{ liste(demo('aktiv') | from_json) }} -#}
+{%- macro demo(art='aktiv') -%}
+{%- if art == 'aktiv' -%}
+{{ [
+  {'carrier': 'DHL (DE)', 'barcode': '00340434161094042557', 'sender': 'Amazon', 'status': 'out_for_delivery', 'delivered': false, 'planned_from': (now() + timedelta(hours=2)).isoformat(), 'planned_to': (now() + timedelta(hours=4)).isoformat(), 'pickup_point': none, 'url': none},
+  {'carrier': 'GLS', 'barcode': '50123456789', 'sender': 'Thomann', 'status': 'at_pickup_point', 'delivered': false, 'planned_from': none, 'planned_to': none, 'pickup_point': 'GLS PaketShop Kiosk am Markt', 'url': none},
+  {'carrier': 'DPD', 'barcode': '01906012345678', 'sender': 'Reichelt Elektronik', 'status': 'problem', 'delivered': false, 'planned_from': (now() + timedelta(days=3)).isoformat(), 'planned_to': none, 'pickup_point': none, 'url': none},
+  {'carrier': 'Hermes', 'barcode': 'H1000730000832301041', 'sender': 'Zalando', 'status': 'in_transit', 'delivered': false, 'planned_from': (now() + timedelta(days=1)).isoformat(), 'planned_to': none, 'pickup_point': none, 'url': none},
+  {'carrier': 'UPS', 'barcode': '1Z999AA10123456784', 'sender': none, 'status': 'registered', 'delivered': false, 'planned_from': none, 'planned_to': none, 'pickup_point': none, 'url': none}
+] | to_json }}
+{%- else -%}
+{{ [
+  {'carrier': 'DPD', 'barcode': '01906087654321', 'sender': 'Otto', 'receiver': 'Otto Retoure', 'status': 'delivered', 'delivered': true, 'delivered_at': (now() - timedelta(hours=5)).isoformat(), 'pickup_point': none, 'url': none},
+  {'carrier': 'DHL (DE)', 'barcode': '00340434161094049999', 'sender': 'MediaMarkt', 'receiver': 'MediaMarkt', 'status': 'delivered', 'delivered': true, 'delivered_at': (now() - timedelta(days=2)).isoformat(), 'pickup_point': none, 'url': none}
+] | to_json }}
+{%- endif -%}
+{%- endmacro -%}

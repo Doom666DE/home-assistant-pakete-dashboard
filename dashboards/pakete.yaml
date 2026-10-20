@@ -1,0 +1,1000 @@
+swipe_nav:
+  wrap: false
+  enable_mouse_swipe: true
+  animate: swipe
+views:
+- type: sections
+  title: Pakete
+  path: pakete
+  icon: mdi:package-variant-closed
+  max_columns: 4
+  badges: []
+  sections:
+  - type: grid
+    column_span: 4
+    cards:
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import anzahl %}
+
+        <div><div>DEIN LIEFERÜBERBLICK</div><h1>Pakete &amp; Briefe</h1><p>Alles auf einen Blick. Von
+        der Ankündigung bis zur Ankunft.</p><div><span>{{ anzahl(''incoming_parcels'') }} unterwegs</span><span>{{
+        anzahl(''awaiting_pickup'') }} abholbereit</span><span>{{ (state_attr(''sensor.briefankuendigungen'',''ankuendigungen'')
+        or []) | length }} Briefankündigungen</span></div></div>'
+      grid_options:
+        columns: full
+      card_mod:
+        style:
+          .: 'ha-card{border:1px solid #50bee638;border-radius:20px;background:radial-gradient(ellipse
+            at 95% 0%,#7263ef50,transparent 55%),linear-gradient(110deg,#123a4b,#1b3041 55%,#252c46);box-shadow:0
+            8px 28px #0002;padding:0 12px;color:#eefaff}'
+          ha-markdown$: 'ha-markdown-element > div{padding:12px 10px}ha-markdown-element > div > div:first-child{font-size:11px;letter-spacing:.2em;font-weight:700;color:#83d9ed}h1{font-size:40px
+            !important;line-height:1.15 !important;margin:10px 0 !important;font-weight:800 !important;letter-spacing:-.035em}p{font-size:14px;color:#b9ced9;margin:0
+            0 22px}ha-markdown-element > div > div:last-child{display:flex;gap:10px;flex-wrap:wrap}span{border:1px
+            solid #ffffff20;background:#ffffff0d;border-radius:30px;padding:8px 14px;font-size:12px;font-weight:600}
+
+            ha-markdown-element > div{padding:4px 8px}h1{font-size:29px !important;margin:5px 0 !important}p{margin:0
+            0 10px;font-size:12px}span{padding:5px 10px;font-size:11px}ha-markdown-element > div > div:first-child{font-size:10px}'
+  - type: grid
+    column_span: 1
+    cards:
+    - type: heading
+      heading: Sendungsstatus
+      heading_style: title
+      icon: mdi:package-variant-closed
+      grid_options:
+        columns: full
+        rows: 1
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ held() }}'
+      card_mod:
+        style:
+          ha-markdown$: 'ha-markdown-element > div{display:flex;align-items:center;gap:18px;color:#fff}
+
+            ha-markdown-element > div > img{width:76px;height:76px;border-radius:20px;flex:none;box-shadow:0
+            6px 18px rgba(0,0,0,.35)}
+
+            ha-markdown-element > div > div:first-child{width:76px;height:76px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.16);flex:none}
+
+            ha-markdown-element > div > div:first-child > ha-icon{--mdc-icon-size:42px;color:#fff}
+
+            ha-markdown-element > div > div:last-child{min-width:0}
+
+            ha-markdown-element > div > div:last-child > div:nth-child(1){font-size:12px;letter-spacing:.09em;text-transform:uppercase;opacity:.8;font-weight:600;line-height:18px}
+
+            ha-markdown-element > div > div:last-child > div:nth-child(2){font-size:26px;font-weight:700;line-height:32px;margin:2px
+            0}
+
+            ha-markdown-element > div > div:last-child > div:nth-child(3){font-size:14px;opacity:.88;line-height:20px}
+
+            ha-markdown-element > div > div:last-child > div:nth-child(4){display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+
+            ha-markdown-element > div span{display:inline-flex;align-items:center;gap:4px;padding:3px
+            10px;border-radius:999px;font-size:12px;font-weight:600;line-height:18px;white-space:nowrap;background:rgba(255,255,255,.18);color:#fff}
+
+            ha-markdown-element > div span > ha-icon{--mdc-icon-size:14px}
+
+            ha-markdown-element > div > a{border-radius:16px !important;margin:8px 0 !important;padding:15px
+            !important;background:#ffffff09 !important;box-shadow:none !important}ha-markdown-element
+            > div > a:hover{background:#78b4dc17 !important}table{font-variant-numeric:tabular-nums}tbody
+            tr:hover{background:#78b4dc0c}
+
+            ha-markdown-element > div > a{padding:10px !important;margin:5px 0 !important;border-radius:12px
+            !important}td,th{padding:8px 2px !important}th ha-icon{--mdc-icon-size:18px}td img{width:21px
+            !important}'
+          .: 'ha-card{background:linear-gradient(135deg,#16324f 0%,#2a5a7a 55%,#4a4380 100%);border:none;box-shadow:0
+            8px 24px rgba(0,0,0,.25)}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+      grid_options:
+        columns: full
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_incoming_parcels
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''incoming_parcels'') }}'
+      secondary: Unterwegs
+      icon: mdi:truck-fast-outline
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''blue'' if anzahl(''incoming_parcels'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_en_route_to_pickup_point
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''en_route_to_pickup_point'') }}'
+      secondary: Zum Paketshop
+      icon: mdi:map-marker-path
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''cyan'' if anzahl(''en_route_to_pickup_point'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_awaiting_pickup
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''awaiting_pickup'') }}'
+      secondary: Abholbereit
+      icon: mdi:storefront-outline
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''purple'' if anzahl(''awaiting_pickup'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_delivered_parcels
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''delivered_parcels'') }}'
+      secondary: Zugestellt
+      icon: mdi:package-variant-closed-check
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''green'' if anzahl(''delivered_parcels'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_outgoing_parcels
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''outgoing_parcels'') }}'
+      secondary: Ausgehend
+      icon: mdi:package-up
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''amber'' if anzahl(''outgoing_parcels'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: custom:mushroom-template-card
+      entity: sensor.parcel_aggregator_outgoing_delivered_parcels
+      primary: '{% from ''pakete.jinja'' import anzahl %} {{ anzahl(''outgoing_delivered_parcels'') }}'
+      secondary: Angekommen
+      icon: mdi:check-all
+      icon_color: '{% from ''pakete.jinja'' import anzahl %} {{ ''teal'' if anzahl(''outgoing_delivered_parcels'')
+        | int(0) > 0 else ''disabled'' }}'
+      layout: horizontal
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/919b2edc10ba11cb8f52a6463d91b716
+      card_mod:
+        style:
+          .: "ha-card {\n  height: 100%;\n  box-sizing: border-box;\n  padding: 0 !important;\n  --spacing:\
+            \ 6px;\n  --icon-size: 30px;\n  --card-primary-font-size: 20px;\n  --card-primary-line-height:\
+            \ 22px;\n  --card-primary-font-weight: 800;\n  --card-secondary-font-size: 11px;\n  --card-secondary-line-height:\
+            \ 14px;\n  border-radius: 12px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 3px 10px #0002;\n  background: linear-gradient(145deg, #00bcd40e, transparent),\n    var(--card-background-color);\n\
+            }\n"
+          mushroom-state-info$: ".primary {\n  font-size: 20px !important;\n  font-weight: 800 !important;\n\
+            \  line-height: 22px !important;\n}\n.secondary {\n  font-size: 11px !important;\n  line-height:\
+            \ 14px !important;\n}\n"
+      grid_options:
+        columns: 4
+        rows: 1
+    - type: heading
+      heading: Deine Paketdienste
+      heading_style: title
+      icon: mdi:truck-outline
+      grid_options:
+        columns: full
+        rows: 1
+    - type: custom:mushroom-template-card
+      primary: Amazon
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''amazon'') }}
+
+        {{ dienst_stand(''amazon'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/amazon.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''amazon'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/3f2645cd13ce6ad0236cfb472dc21fc7
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+      entity: sensor.amazon_germany_eingehende_pakete
+    - type: custom:mushroom-template-card
+      primary: DHL
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''dhl'') }}
+
+        {{ dienst_stand(''dhl'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/dhl.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''dhl'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/b3657009c348d70fd3358d870ddb200a
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+    - type: custom:mushroom-template-card
+      primary: Hermes
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''hermes'') }}
+
+        {{ dienst_stand(''hermes'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/hermes.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''hermes'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/80b2fbbfc1ccb2433380a74342a6291f
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+    - type: custom:mushroom-template-card
+      primary: GLS
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''gls'') }}
+
+        {{ dienst_stand(''gls'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/gls.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''gls'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/95c5a58b3e102e7f5ebf0eaf187e60ef
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+    - type: custom:mushroom-template-card
+      primary: DPD
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''dpd'') }}
+
+        {{ dienst_stand(''dpd'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/dpd.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''dpd'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/7a2b97170dc66cf6e4ca03108c7cadc9
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+    - type: custom:mushroom-template-card
+      primary: UPS
+      secondary: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ dienst_zeile(''ups'') }}
+
+        {{ dienst_stand(''ups'') }}'
+      multiline_secondary: true
+      picture: /local/pakete/ups.png
+      badge_icon: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ ''mdi:truck-delivery'' if dienst_zustellung(''ups'')
+        | int > 0 else '''' }}'
+      badge_color: orange
+      tap_action:
+        action: navigate
+        navigation_path: /config/devices/device/19e9bd8f6de8b99b96a684670b13c6c1
+      grid_options:
+        columns: 6
+        rows: auto
+      card_mod:
+        style:
+          ha-tile-icon$: .container{border-radius:12px !important;overflow:hidden}
+          .: 'ha-tile-icon{--tile-icon-border-radius:12px}
+
+            ha-tile-icon img{border-radius:12px !important}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{padding:10px 4px;--card-primary-font-size:16px;--card-primary-font-weight:700;--card-secondary-font-size:11px;transition:transform
+            .18s,box-shadow .18s}ha-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0003}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}
+
+            ha-card{padding:1px 0;--card-primary-font-size:14px;--card-secondary-font-size:10px}'
+    - type: heading
+      heading: Pakete nach Paketdienst
+      heading_style: title
+      icon: mdi:table
+      grid_options:
+        columns: full
+        rows: 1
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %}{{ tabelle() }}
+
+
+        Gesamt zählt jede erkennbare Sendung einmal. Amazon-Sendungen können zugleich bei DHL oder anderen
+        Diensten erscheinen.'
+      card_mod:
+        style:
+          ha-markdown$: 'table{width:100%;border-collapse:collapse}
+
+            td,th{padding:9px 4px !important;text-align:center !important;vertical-align:middle;border:none
+            !important}
+
+            th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--secondary-text-color);font-weight:600}
+
+            th ha-icon{--mdc-icon-size:20px;display:block;margin:0 auto}
+
+            td:nth-child(2),th:nth-child(2){text-align:left !important;font-weight:600}
+
+            td:first-child,th:first-child{width:32px}
+
+            tbody tr{border-top:1px solid var(--divider-color)}
+
+            tbody tr:last-child{border-top:2px solid var(--divider-color)}
+
+            td img{border-radius:6px;display:block;margin:auto;width:24px;max-width:none}
+
+            th > span{position:relative;display:block;cursor:help}
+
+            th > span > span{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);padding:7px
+            10px;border-radius:6px;background:var(--primary-text-color);color:var(--primary-background-color);font-size:12px;font-weight:500;text-transform:none;letter-spacing:normal;white-space:nowrap;z-index:10;box-shadow:0
+            2px 8px #0005;pointer-events:none}
+
+            th > span:hover > span{display:block}
+
+
+            ha-markdown-element > div > a{border-radius:16px !important;margin:8px 0 !important;padding:15px
+            !important;background:#ffffff09 !important;box-shadow:none !important}ha-markdown-element
+            > div > a:hover{background:#78b4dc17 !important}table{font-variant-numeric:tabular-nums}tbody
+            tr:hover{background:#78b4dc0c}
+
+            ha-markdown-element > div > a{padding:10px !important;margin:5px 0 !important;border-radius:12px
+            !important}td,th{padding:8px 2px !important}th ha-icon{--mdc-icon-size:18px}td img{width:21px
+            !important}'
+          .: '
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+      grid_options:
+        columns: full
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Unterwegs zu dir
+      heading_style: title
+      icon: mdi:truck-fast-outline
+      grid_options:
+        columns: full
+        rows: 1
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %} {{ aktiv() }}'
+      card_mod:
+        style:
+          ha-markdown$: "ha-markdown-element > div {\n  display: grid;\n  grid-template-columns: repeat(2,\
+            \ minmax(0, 1fr));\n  gap: 8px;\n}\n\nha-markdown-element > div > a {\n  --fc: #9aa0a6;\n\
+            \  display: grid;\n  grid-template-columns: 40px minmax(0, 1fr) max-content;\n  align-items:\
+            \ center;\n  gap: 10px;\n  min-width: 0;\n  padding: 10px;\n  margin: 0;\n  border-radius:\
+            \ 12px;\n  background: #ffffff09;\n  box-shadow: none;\n  text-decoration: none;\n  color:\
+            \ var(--primary-text-color);\n  border-left: 4px solid var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:hover {\n  background: #78b4dc17;\n}\n\nha-markdown-element > div > a > img {\n\
+            \  grid-column: 1;\n  grid-row: 1;\n  width: 40px;\n  height: 40px;\n  border-radius: 10px;\n\
+            }\n\nha-markdown-element > div > a > div:nth-of-type(1) {\n  grid-column: 2;\n  grid-row:\
+            \ 1;\n  min-width: 0;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) > div {\n \
+            \ font-size: 12px;\n  line-height: 17px;\n  color: var(--secondary-text-color);\n  white-space:\
+            \ nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\nha-markdown-element > div\
+            \ > a > div:nth-of-type(1) > div:first-child {\n  font-weight: 600;\n  font-size: 15px;\n\
+            \  line-height: 20px;\n  color: var(--primary-text-color);\n}\n\nha-markdown-element > div\
+            \ > a > div:nth-of-type(1) > div > span {\n  font-family: var(--code-font-family, monospace);\n\
+            \  font-size: 11px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) > div > ha-icon\
+            \ {\n  --mdc-icon-size: 14px;\n  margin-right: 4px;\n  vertical-align: -2px;\n}\n\nha-markdown-element\
+            \ > div > a > div:nth-of-type(1) > div:last-child {\n  display: flex;\n  gap: 4px;\n  margin-top:\
+            \ 7px;\n  width: 100%;\n  max-width: 220px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1)\
+            \ > div:last-child > i {\n  height: 4px;\n  flex: 1;\n  border-radius: 2px;\n  background:\
+            \ rgba(var(--rgb-primary-text-color), 0.14);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ {\n  grid-column: 3;\n  grid-row: 1;\n  justify-self: end;\n  align-self: center;\n  display:\
+            \ flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 5px;\n  min-width: 0;\n\
+            \  text-align: right;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 3px 10px;\n\
+            \  border-radius: 999px;\n  font-size: 12px;\n  font-weight: 600;\n  line-height: 18px;\n\
+            \  white-space: nowrap;\n  color: var(--fc);\n  background: color-mix(in srgb, var(--fc) 18%,\
+            \ transparent);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ > ha-icon {\n  --mdc-icon-size: 14px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ > span:last-child {\n  font-size: 12px;\n  color: var(--secondary-text-color);\n  white-space:\
+            \ nowrap;\n}\n\nha-markdown-element > div > div {\n  grid-column: 1 / -1;\n  display: flex;\n\
+            \  align-items: center;\n  gap: 10px;\n  color: var(--secondary-text-color);\n  font-size:\
+            \ 14px;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:tag-outline\"\
+            ]) {\n  --fc: #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:tag-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:truck-fast-outline\"]) {\n  --fc: #42a5f5;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-fast-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-delivery\"]) {\n  --fc: #ffa726;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:truck-delivery\"]) > div:nth-of-type(1)\
+            \ > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"]) {\n  --fc:\
+            \ #ba68c8;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n\
+            }\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:check-circle\"\
+            ]) {\n  --fc: #66bb6a;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:check-circle\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+4) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:keyboard-return\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:keyboard-return\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:alert-circle\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:alert-circle\"]) > div:nth-of-type(1) >\
+            \ div:last-child > i:nth-child(-n+2) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"]) {\n  --fc:\
+            \ #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background: var(--fc);\n\
+            }\n\n@media (max-width: 600px) {\n  ha-markdown-element > div {\n    grid-template-columns:\
+            \ 1fr;\n  }\n}\n"
+          .: "ha-card {\n  border-radius: 16px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 4px 14px #0002;\n  background: linear-gradient(145deg, #ffffff09, #ffffff02),\n    var(--card-background-color);\n\
+            }\n"
+      grid_options:
+        columns: full
+    - type: heading
+      heading: Zuletzt zugestellt
+      heading_style: title
+      icon: mdi:package-variant-closed-check
+      grid_options:
+        columns: full
+        rows: 1
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %} {{ zugestellt() }}'
+      card_mod:
+        style:
+          ha-markdown$: "ha-markdown-element > div {\n  display: grid;\n  grid-template-columns: repeat(2,\
+            \ minmax(0, 1fr));\n  gap: 8px;\n}\n\nha-markdown-element > div > a {\n  --fc: #9aa0a6;\n\
+            \  display: grid;\n  grid-template-columns: 40px minmax(0, 1fr) max-content;\n  align-items:\
+            \ center;\n  gap: 10px;\n  min-width: 0;\n  padding: 10px 12px;\n  border-radius: 14px;\n\
+            \  background: rgba(var(--rgb-primary-text-color), 0.05);\n  text-decoration: none;\n  color:\
+            \ var(--primary-text-color);\n  border-left: 4px solid var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a > img {\n  grid-column: 1;\n  grid-row: 1;\n  width: 40px;\n  height: 40px;\n\
+            \  border-radius: 10px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) {\n  grid-column:\
+            \ 2;\n  grid-row: 1;\n  min-width: 0;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1)\
+            \ > div {\n  font-size: 12px;\n  line-height: 17px;\n  color: var(--secondary-text-color);\n\
+            \  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\nha-markdown-element\
+            \ > div > a > div:nth-of-type(1) > div:first-child {\n  font-weight: 600;\n  font-size: 15px;\n\
+            \  line-height: 20px;\n  color: var(--primary-text-color);\n}\n\nha-markdown-element > div\
+            \ > a > div:nth-of-type(1) > div > span {\n  font-family: var(--code-font-family, monospace);\n\
+            \  font-size: 11px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) > div > ha-icon\
+            \ {\n  --mdc-icon-size: 14px;\n  margin-right: 4px;\n  vertical-align: -2px;\n}\n\nha-markdown-element\
+            \ > div > a > div:nth-of-type(1) > div:last-child {\n  display: flex;\n  gap: 4px;\n  margin-top:\
+            \ 7px;\n  width: 100%;\n  max-width: 220px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1)\
+            \ > div:last-child > i {\n  height: 4px;\n  flex: 1;\n  border-radius: 2px;\n  background:\
+            \ rgba(var(--rgb-primary-text-color), 0.14);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ {\n  grid-column: 3;\n  grid-row: 1;\n  justify-self: end;\n  align-self: center;\n  display:\
+            \ flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 5px;\n  min-width: 0;\n\
+            \  text-align: right;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 3px 10px;\n\
+            \  border-radius: 999px;\n  font-size: 12px;\n  font-weight: 600;\n  line-height: 18px;\n\
+            \  white-space: nowrap;\n  color: var(--fc);\n  background: color-mix(in srgb, var(--fc) 18%,\
+            \ transparent);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ > ha-icon {\n  --mdc-icon-size: 14px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ > span:last-child {\n  font-size: 12px;\n  color: var(--secondary-text-color);\n  white-space:\
+            \ nowrap;\n}\n\nha-markdown-element > div > div {\n  grid-column: 1 / -1;\n  display: flex;\n\
+            \  align-items: center;\n  gap: 10px;\n  color: var(--secondary-text-color);\n  font-size:\
+            \ 14px;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:tag-outline\"\
+            ]) {\n  --fc: #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:tag-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:truck-fast-outline\"]) {\n  --fc: #42a5f5;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-fast-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-delivery\"]) {\n  --fc: #ffa726;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:truck-delivery\"]) > div:nth-of-type(1)\
+            \ > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"]) {\n  --fc:\
+            \ #ba68c8;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n\
+            }\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:check-circle\"\
+            ]) {\n  --fc: #66bb6a;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:check-circle\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+4) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:keyboard-return\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:keyboard-return\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:alert-circle\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:alert-circle\"]) > div:nth-of-type(1) >\
+            \ div:last-child > i:nth-child(-n+2) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"]) {\n  --fc:\
+            \ #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background: var(--fc);\n\
+            }\n\n@media (max-width: 600px) {\n  ha-markdown-element > div {\n    grid-template-columns:\
+            \ 1fr;\n  }\n}\n"
+          .: ''
+      grid_options:
+        columns: full
+    - type: heading
+      heading: Ausgehende Sendungen
+      heading_style: title
+      icon: mdi:package-up
+      visibility:
+      - condition: or
+        conditions:
+        - condition: numeric_state
+          entity: sensor.parcel_aggregator_outgoing_parcels
+          above: 0
+        - condition: numeric_state
+          entity: sensor.parcel_aggregator_outgoing_delivered_parcels
+          above: 0
+      grid_options:
+        columns: full
+        rows: 1
+    - type: markdown
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
+        dienst_stand, dienst_zustellung, tabelle, demo %} {{ ausgehend() }}'
+      card_mod:
+        style:
+          ha-markdown$: "ha-markdown-element > div {\n  display: grid;\n  grid-template-columns: repeat(2,\
+            \ minmax(0, 1fr));\n  gap: 8px;\n}\n\nha-markdown-element > div > a {\n  --fc: #9aa0a6;\n\
+            \  display: grid;\n  grid-template-columns: 40px minmax(0, 1fr) max-content;\n  align-items:\
+            \ center;\n  gap: 10px;\n  min-width: 0;\n  padding: 10px;\n  margin: 0;\n  border-radius:\
+            \ 12px;\n  background: #ffffff09;\n  box-shadow: none;\n  text-decoration: none;\n  color:\
+            \ var(--primary-text-color);\n  border-left: 4px solid var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:hover {\n  background: #78b4dc17;\n}\n\nha-markdown-element > div > a > img {\n\
+            \  grid-column: 1;\n  grid-row: 1;\n  width: 40px;\n  height: 40px;\n  border-radius: 10px;\n\
+            }\n\nha-markdown-element > div > a > div:nth-of-type(1) {\n  grid-column: 2;\n  grid-row:\
+            \ 1;\n  min-width: 0;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) > div {\n \
+            \ font-size: 12px;\n  line-height: 17px;\n  color: var(--secondary-text-color);\n  white-space:\
+            \ nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\nha-markdown-element > div\
+            \ > a > div:nth-of-type(1) > div:first-child {\n  font-weight: 600;\n  font-size: 15px;\n\
+            \  line-height: 20px;\n  color: var(--primary-text-color);\n}\n\nha-markdown-element > div\
+            \ > a > div:nth-of-type(1) > div > span {\n  font-family: var(--code-font-family, monospace);\n\
+            \  font-size: 11px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1) > div > ha-icon\
+            \ {\n  --mdc-icon-size: 14px;\n  margin-right: 4px;\n  vertical-align: -2px;\n}\n\nha-markdown-element\
+            \ > div > a > div:nth-of-type(1) > div:last-child {\n  display: flex;\n  gap: 4px;\n  margin-top:\
+            \ 7px;\n  width: 100%;\n  max-width: 220px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(1)\
+            \ > div:last-child > i {\n  height: 4px;\n  flex: 1;\n  border-radius: 2px;\n  background:\
+            \ rgba(var(--rgb-primary-text-color), 0.14);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ {\n  grid-column: 3;\n  grid-row: 1;\n  justify-self: end;\n  align-self: center;\n  display:\
+            \ flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 5px;\n  min-width: 0;\n\
+            \  text-align: right;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 3px 10px;\n\
+            \  border-radius: 999px;\n  font-size: 12px;\n  font-weight: 600;\n  line-height: 18px;\n\
+            \  white-space: nowrap;\n  color: var(--fc);\n  background: color-mix(in srgb, var(--fc) 18%,\
+            \ transparent);\n}\n\nha-markdown-element > div > a > div:nth-of-type(2) > span:first-child\
+            \ > ha-icon {\n  --mdc-icon-size: 14px;\n}\n\nha-markdown-element > div > a > div:nth-of-type(2)\
+            \ > span:last-child {\n  font-size: 12px;\n  color: var(--secondary-text-color);\n  white-space:\
+            \ nowrap;\n}\n\nha-markdown-element > div > div {\n  grid-column: 1 / -1;\n  display: flex;\n\
+            \  align-items: center;\n  gap: 10px;\n  color: var(--secondary-text-color);\n  font-size:\
+            \ 14px;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:tag-outline\"\
+            ]) {\n  --fc: #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:tag-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:truck-fast-outline\"]) {\n  --fc: #42a5f5;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-fast-outline\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:truck-delivery\"]) {\n  --fc: #ffa726;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:truck-delivery\"]) > div:nth-of-type(1)\
+            \ > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"]) {\n  --fc:\
+            \ #ba68c8;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:storefront-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+3) {\n  background: var(--fc);\n\
+            }\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:check-circle\"\
+            ]) {\n  --fc: #66bb6a;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:check-circle\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+4) {\n  background:\
+            \ var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"\
+            mdi:keyboard-return\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:keyboard-return\"]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+2)\
+            \ {\n  background: var(--fc);\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2)\
+            \ ha-icon[icon=\"mdi:alert-circle\"]) {\n  --fc: #ef5350;\n}\n\nha-markdown-element > div\
+            \ > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:alert-circle\"]) > div:nth-of-type(1) >\
+            \ div:last-child > i:nth-child(-n+2) {\n  background: var(--fc);\n}\n\nha-markdown-element\
+            \ > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"]) {\n  --fc:\
+            \ #9aa0a6;\n}\n\nha-markdown-element > div > a:has(> div:nth-of-type(2) ha-icon[icon=\"mdi:help-circle-outline\"\
+            ]) > div:nth-of-type(1) > div:last-child > i:nth-child(-n+1) {\n  background: var(--fc);\n\
+            }\n\n@media (max-width: 600px) {\n  ha-markdown-element > div {\n    grid-template-columns:\
+            \ 1fr;\n  }\n}\n"
+          .: "ha-card {\n  border-radius: 16px;\n  border: 1px solid rgba(150, 180, 210, 0.13);\n  box-shadow:\
+            \ 0 4px 14px #0002;\n  background: linear-gradient(145deg, #ffffff09, #ffffff02),\n    var(--card-background-color);\n\
+            }\n"
+      grid_options:
+        columns: full
+      visibility:
+      - condition: or
+        conditions:
+        - condition: numeric_state
+          entity: sensor.parcel_aggregator_outgoing_parcels
+          above: 0
+        - condition: numeric_state
+          entity: sensor.parcel_aggregator_outgoing_delivered_parcels
+          above: 0
+    - type: heading
+      heading: Automatik
+      heading_style: title
+      icon: mdi:robot-outline
+      grid_options:
+        columns: 12
+        rows: 1
+    - type: heading
+      heading: Sendung von Hand hinzufügen
+      heading_style: title
+      icon: mdi:package-variant-plus
+      grid_options:
+        columns: 12
+        rows: 1
+    - square: false
+      type: grid
+      cards:
+      - type: custom:mushroom-template-card
+        primary: Alle aktualisieren
+        secondary: 'Amazon, DHL, Hermes, GLS und DPD sofort abfragen
+
+          UPS fragt nur selbst ab'
+        multiline_secondary: true
+        icon: mdi:refresh
+        icon_color: cyan
+        tap_action:
+          action: perform-action
+          perform_action: button.press
+          target:
+            entity_id:
+            - button.dhl_germany_aktualisieren
+            - button.hermes_germany_aktualisieren
+            - button.gls_germany_aktualisieren
+            - button.dpd_germany_aktualisieren
+            - button.amazon_germany_aktualisieren
+        grid_options:
+          columns: full
+          rows: auto
+        card_mod:
+          style: 'ha-card{--icon-border-radius:12px;--icon-size:44px}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+      - square: false
+        type: grid
+        cards:
+        - type: tile
+          entity: automation.pakete_trackingnummern_aus_e_mails_gls_ups
+          name: Mail-Erkennung GLS/UPS
+          icon: mdi:email-search-outline
+          state_content:
+          - state
+          - last_triggered
+          grid_options:
+            columns: 6
+            rows: 1
+          card_mod:
+            style: '
+
+              ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px
+              #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+              ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+        - type: tile
+          entity: automation.pakete_zugestellte_sendungen_austragen
+          name: Zugestellte austragen
+          icon: mdi:broom
+          state_content:
+          - state
+          - last_triggered
+          grid_options:
+            columns: 6
+            rows: 1
+          card_mod:
+            style: '
+
+              ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px
+              #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+              ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+        columns: 2
+      - type: custom:dpd-assist-card
+        postcode: '00000'
+      columns: 1
+      grid_options:
+        rows: auto
+    - square: false
+      type: grid
+      cards:
+      - type: entities
+        entities:
+        - entity: input_select.paket_dienst
+          name: Paketdienst
+        - entity: input_text.paket_trackingnummer
+          name: Trackingnummer
+        - type: button
+          name: Trackingnummer eintragen
+          icon: mdi:package-variant-plus
+          action_name: Hinzufügen
+          tap_action:
+            action: perform-action
+            perform_action: script.paket_hinzufugen
+        card_mod:
+          style: '
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+      - type: markdown
+        content: '**Amazon, DHL und Hermes** finden Sendungen aus deinem Konto von selbst. Amazon nimmt
+          keine einzelnen Trackingnummern an. Trage hier nur DHL-/Hermes-Nummern ein, die dort nicht auftauchen.
+
+
+          **GLS und UPS** werden zusätzlich automatisch aus Versandmails erkannt, auch bei Amazon-Bestellungen.
+          **DPD** läuft nur über das Konto.'
+        card_mod:
+          style: 'ha-card{background:none;border:none;box-shadow:none}
+
+            ha-markdown{padding:0 4px !important;font-size:13px;color:var(--secondary-text-color)}
+
+            ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+            ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+        grid_options:
+          columns: full
+      columns: 1
+  - type: grid
+    column_span: 1
+    cards:
+    - type: heading
+      heading: Dein Briefkasten
+      icon: mdi:email-newsletter
+      heading_style: title
+      grid_options:
+        columns: full
+        rows: 1
+    - type: custom:vertical-stack-in-card
+      cards:
+      - type: horizontal-stack
+        cards:
+        - type: custom:mushroom-template-card
+          primary: '{% set ns = namespace(n=0) %}{% for p in state_attr(''sensor.briefankuendigungen'',''ankuendigungen'')
+            or [] %}{% if as_timestamp(p.datum) | timestamp_custom(''%Y-%m-%d'') == now().strftime(''%Y-%m-%d'')
+            %}{% set ns.n = ns.n + 1 %}{% endif %}{% endfor %}{{ ns.n }}'
+          secondary: Heute
+          icon: mdi:email-plus-outline
+          icon_color: cyan
+          layout: vertical
+          tap_action:
+            action: none
+          card_mod:
+            style: ha-card{border:0;box-shadow:none;background:transparent;--card-primary-font-size:28px;--card-primary-line-height:34px;--card-primary-font-weight:700;--card-secondary-font-size:12px}
+        - type: custom:mushroom-template-card
+          primary: '{{ (state_attr(''sensor.briefankuendigungen'',''ankuendigungen'') or []) | length
+            }}'
+          secondary: Letzte 7 Tage
+          icon: mdi:email-multiple-outline
+          icon_color: amber
+          layout: vertical
+          tap_action:
+            action: none
+          card_mod:
+            style: ha-card{border:0;box-shadow:none;background:transparent;--card-primary-font-size:28px;--card-primary-line-height:34px;--card-primary-font-weight:700;--card-secondary-font-size:12px}
+        - type: custom:mushroom-template-card
+          primary: Ankündigungen
+          secondary: Leeren
+          icon: mdi:email-remove-outline
+          icon_color: grey
+          layout: vertical
+          tap_action:
+            action: perform-action
+            perform_action: button.press
+            target:
+              entity_id: button.briefankuendigungen_leeren
+            confirmation:
+              text: Gespeicherte Briefankündigungen aus der Anzeige entfernen?
+          card_mod:
+            style: ha-card{border:0;box-shadow:none;background:transparent;--card-primary-font-size:14px;--card-primary-font-weight:600;--card-secondary-font-size:12px}
+      grid_options:
+        columns: full
+      card_mod:
+        style: 'ha-card{padding:8px 4px;background:linear-gradient(120deg,rgba(0,188,212,.12),rgba(255,193,7,.07));border-radius:16px}
+
+          ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+          ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+    - type: markdown
+      content: '{% set items = state_attr(''sensor.briefankuendigungen'',''ankuendigungen'') or [] %}
+
+        {% if items %}
+
+        **{{ items | length }} Briefankündigungs-Mail{{ ''s'' if items | length != 1 else '''' }}** in
+        den letzten 7 Tagen
+
+        {% for p in items %}
+
+        - **{{ as_timestamp(p.datum) | timestamp_custom(''%d.%m., %H:%M'') }}** · {{ p.betreff | e }}
+
+        {% endfor %}
+
+        {% else %}
+
+        Noch keine Briefankündigungen erfasst. Neue Ankündigungs-Mails der Deutschen Post erscheinen hier
+        automatisch.
+
+        {% endif %}
+
+
+        Eine Ankündigung bestätigt keine Zustellung. Eine Mail kann mehrere Briefe ankündigen.'
+      grid_options:
+        columns: full
+      card_mod:
+        style: '
+
+          ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+          ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+    - type: heading
+      heading: Zustellkalender
+      heading_style: title
+      icon: mdi:calendar-clock
+      grid_options:
+        columns: full
+        rows: 1
+    - type: calendar
+      entities:
+      - calendar.parcel_aggregator_deliveries
+      - calendar.amazon_germany_zustellungen
+      initial_view: listWeek
+      grid_options:
+        columns: full
+        rows: auto
+      card_mod:
+        style: '
+
+          ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
+          ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
+  - type: grid
+    column_span: 3
+    cards: []
+  dense_section_placement: true
+  cards: []

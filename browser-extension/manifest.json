@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "DPD · Home Assistant Hilfe",
+  "version": "1.0.0",
+  "description": "Verbindet das Paket-Dashboard mit einer geöffneten DPD-Prüfseite. Bearbeitet nur die einzeln angeforderte Aufgabe.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://my.dpd.de/*", "http://homeassistant.local:8123/*"],
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [
+    {"matches": ["http://homeassistant.local:8123/*"], "js": ["ha-relay.js"], "run_at": "document_start"},
+    {"matches": ["https://my.dpd.de/*"], "js": ["dpd.js"], "run_at": "document_idle"}
+  ]
+}

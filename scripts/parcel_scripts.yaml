@@ -1,0 +1,95 @@
+paket_hinzufugen:
+  alias: Paket hinzufügen
+  description: Wird vom Formular „Sendung von Hand hinzufügen“ in der Pakete-Ansicht
+    aufgerufen. Liest die Trackingnummer aus input_text.paket_trackingnummer und den
+    Dienst aus input_select.paket_dienst, trägt die Nummer beim passenden Paketdienst
+    ein (DHL, Hermes, GLS oder UPS) und leert danach das Feld. DPD und Amazon fehlen,
+    weil diese Integrationen nur über das Konto laufen und keine einzelnen Nummern
+    annehmen.
+  icon: mdi:package-variant-plus
+  mode: single
+  sequence:
+  - alias: '1. Eingaben lesen: Nummer bereinigen (Großbuchstaben, ohne Leerzeichen)
+      und gewählten Dienst merken'
+    variables:
+      code: '{{ states(''input_text.paket_trackingnummer'') | trim | upper | replace(''
+        '', '''') }}'
+      dienst: '{{ states(''input_select.paket_dienst'') | lower }}'
+  - alias: '2. Prüfen: Eine Nummer mit weniger als 8 Zeichen ist ein Tippfehler –
+      Hinweis anzeigen und abbrechen'
+    if:
+    - alias: Nummer kürzer als 8 Zeichen (als Text gezählt, weil reine Ziffern sonst
+        als Zahl gelesen werden)
+      condition: template
+      value_template: '{{ code | string | length < 8 }}'
+    then:
+    - alias: Hinweis in den Benachrichtigungen anzeigen
+      action: persistent_notification.create
+      data:
+        notification_id: paket_hinzufuegen
+        title: Paket nicht hinzugefügt
+        message: Die Trackingnummer „{{ code }}“ ist zu kurz. Bitte die vollständige
+          Nummer eingeben.
+    - alias: Skript beenden, ohne etwas einzutragen
+      stop: Trackingnummer zu kurz
+  - alias: 3. Nummer beim gewählten Paketdienst eintragen
+    choose:
+    - alias: 'DHL: in den Eintrag „DHL Tracking Codes“ schreiben (nicht ins Konto,
+        das findet seine Sendungen selbst)'
+      conditions:
+      - condition: template
+        value_template: '{{ dienst == ''dhl'' }}'
+      sequence:
+      - alias: DHL-Sendung verfolgen
+        action: dhl.track_parcel
+        data:
+          tracking_code: '{{ code }}'
+          config_entry_id: 01M4EQPAR2PE4FTG5VXCGF5M23
+    - alias: 'Hermes: in den Eintrag für Trackingnummern schreiben (das Hermes-Konto
+        nimmt keine einzelnen Nummern an)'
+      conditions:
+      - condition: template
+        value_template: '{{ dienst == ''hermes'' }}'
+      sequence:
+      - alias: Hermes-Sendung verfolgen
+        action: hermes.track_parcel
+        data:
+          tracking_code: '{{ code }}'
+    - alias: 'GLS: beim GLS-Eintrag eintragen'
+      conditions:
+      - condition: template
+        value_template: '{{ dienst == ''gls'' }}'
+      sequence:
+      - alias: GLS-Sendung verfolgen
+        action: gls.track_parcel
+        data:
+          tracking_code: '{{ code }}'
+    - alias: 'UPS: beim UPS-Eintrag eintragen (UPS fragt nur selten ab, der Status
+        kommt verzögert)'
+      conditions:
+      - condition: template
+        value_template: '{{ dienst == ''ups'' }}'
+      sequence:
+      - alias: UPS-Sendung verfolgen
+        action: ups.track_parcel
+        data:
+          tracking_code: '{{ code }}'
+    default:
+    - alias: 'Unbekannter Dienst: abbrechen, damit das Feld nicht geleert wird'
+      stop: Unbekannter Paketdienst
+      error: true
+  - alias: 4. Eingabefeld leeren, damit die nächste Nummer eingegeben werden kann
+    action: input_text.set_value
+    target:
+      entity_id: input_text.paket_trackingnummer
+    data:
+      value: ''
+  - alias: 5. Einen früheren Fehlerhinweis wieder ausblenden
+    action: persistent_notification.dismiss
+    data:
+      notification_id: paket_hinzufuegen
+  - alias: 6. Im Logbuch unter „Paket-Tracking“ vermerken, was eingetragen wurde
+    action: logbook.log
+    data:
+      name: Paket-Tracking
+      message: '{{ dienst }} {{ code }} von Hand hinzugefügt'

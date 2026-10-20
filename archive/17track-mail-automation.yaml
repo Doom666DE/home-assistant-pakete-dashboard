@@ -1,0 +1,74 @@
+- id: '1785953287133'
+  alias: DHL Sendungsnummern aus GMX automatisch übernehmen
+  description: Erkennt Sendungsnummern in neuen DHL-bezogenen Mails des vorhandenen
+    GMX-IMAP-Kontos, fügt sie dem vorhandenen 17TRACK-Konto hinzu und speichert pro
+    Mail einen Dashboard-Eintrag. Gleiche Nummern dürfen mehrfach erscheinen. Die
+    Mail bleibt unverändert und ungelesen.
+  triggers:
+  - trigger: event
+    event_type: imap_content
+    event_data:
+      entry_id: 01JT40QMJZBHZCJMCKRGPE5K4Y
+      initial: true
+    note: Nur neu eingegangene Nachrichten der vorhandenen GMX-IMAP-Verbindung.
+    id: neue_gmx_mail
+  conditions: []
+  actions:
+  - condition: trigger
+    id: neue_gmx_mail
+    note: Ein manueller Start enthält keine Maildaten und wird deshalb sauber beendet;
+      echte neue GMX-Mails laufen weiter.
+  - action: imap.fetch
+    data:
+      entry: 01JT40QMJZBHZCJMCKRGPE5K4Y
+      uid: '{{ trigger.event.data[''uid''] }}'
+    response_variable: dhl_mail
+    note: Vollständigen Mailtext laden; das im Ereignis enthaltene Textfeld kann nach
+      2048 Bytes abgeschnitten sein.
+  - variables:
+      dhl_sender: '{{ dhl_mail.get(''sender'', '''') | string | lower }}'
+      dhl_subject: '{{ dhl_mail.get(''subject'', '''') | string | trim }}'
+      dhl_content: '{{ (dhl_mail.get(''subject'', '''') ~ ''\n'' ~ dhl_mail.get(''text'',
+        '''')) | replace(''%3D'', ''='') | replace(''%3d'', ''='') | replace(''&amp;'',
+        ''&'') }}'
+      dhl_content_lower: '{{ dhl_content | lower }}'
+      dhl_tracking_numbers: '{% set labeled = dhl_content | regex_findall(''(?i)(?:sendungsnummer|shipment(?:\\s+number)?|tracking(?:\\s*(?:number|id))?|piececode)[^A-Z0-9]{0,30}([A-Z0-9]{10,39})'')
+        %}
+
+        {% set strict = dhl_content | regex_findall(''(?i)\\b(?:JJD[0-9]{18,22}|[A-Z]{2}[0-9]{9}[A-Z]{2}|[0-9]{20,22})\\b'')
+        %}
+
+        {{ (labeled + strict) | map(''upper'') | unique | list | to_json }}'
+    note: Gängige deutsche, internationale und in DHL-Trackinglinks enthaltene Sendungsnummern
+      erkennen.
+  - note: Nur DHL-bezogene Mails mit mindestens einer plausiblen Sendungsnummer verarbeiten.
+    if:
+    - condition: template
+      value_template: '{{ (''dhl'' in dhl_sender or ''deutschepost'' in dhl_sender
+        or (''dhl'' in dhl_content_lower and (''sendungsnummer'' in dhl_content_lower
+        or ''tracking'' in dhl_content_lower or ''piececode'' in dhl_content_lower)))
+        and (dhl_tracking_numbers | count > 0) }}'
+    then:
+    - repeat:
+        for_each: '{{ dhl_tracking_numbers }}'
+        sequence:
+        - action: seventeentrack.add_package
+          data:
+            config_entry_id: 01KXQS1P8AWW0CHKHSE9MF95ST
+            package_tracking_number: '{{ repeat.item }}'
+            package_friendly_name: '{{ ((''DHL: '' ~ dhl_subject) if dhl_subject else
+              (''DHL '' ~ repeat.item[-8:])) | truncate(80, true, '''') }}'
+          continue_on_error: true
+          note: Doppelte oder vom Paketdienst noch nicht bekannte Nummern sollen spätere
+            Nummern derselben Mail nicht blockieren.
+        - action: todo.add_item
+          target:
+            entity_id: todo.dhl_sendungen
+          data:
+            item: '{{ repeat.item }}'
+            description: '{{ (''Betreff: '' ~ dhl_subject) if dhl_subject else ''Automatisch
+              aus GMX erkannt'' }}'
+          note: Jede neue DHL-Mail als eigenen Dashboard-Eintrag speichern; gleiche
+            Sendungsnummern bleiben absichtlich mehrfach sichtbar.
+  mode: queued
+  max: 10

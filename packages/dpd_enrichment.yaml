@@ -1,0 +1,7 @@
+dpd_enrichment:
+  mail_username: !secret parcel_mail_username
+
+recorder:
+  exclude:
+    entities:
+      - sensor.dpd_zusatzinformationen

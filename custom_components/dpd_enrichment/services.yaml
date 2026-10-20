@@ -1,0 +1,25 @@
+record:
+  name: DPD-Absender bestätigen
+  description: Speichert einen bestätigten Absender je Sendungsnummer dauerhaft lokal.
+  fields:
+    barcode:
+      name: Sendungsnummer
+      required: true
+      selector:
+        text:
+    sender:
+      name: Absender
+      required: true
+      selector:
+        text:
+    source:
+      name: Quelle
+      default: manual
+      selector:
+        select:
+          options:
+            - manual
+            - website
+refresh:
+  name: DPD-Zusatzinformationen prüfen
+  description: Prüft fehlende Absender. Website-Abfragen sind auf einmal je Sendung in sechs Stunden begrenzt.

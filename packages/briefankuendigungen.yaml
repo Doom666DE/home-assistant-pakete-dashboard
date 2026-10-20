@@ -1,0 +1,68 @@
+template:
+- triggers:
+  - trigger: event
+    event_type: imap_content
+    id: mail
+  - trigger: time
+    at: 00:05:00
+    id: cleanup
+  - trigger: event
+    event_type: briefankuendigungen_leeren
+    id: clear
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.id != ''mail'' or ((trigger.event.data.username |
+      default('''')) == ''mail@example.invalid'' and (trigger.event.data.subject | default('''')
+      | lower) is search(''briefankündigung|briefankuendigung|brief-ankündigung|ein
+      brief ist unterwegs zu ihnen'') and (trigger.event.data.sender | default('''')
+      | lower) is search(''(?:^|<)ankuendigung@brief\.deutschepost\.de(?:>|$)''))
+      }}'
+  actions:
+  - variables:
+      brief_records: '{% set cutoff = as_timestamp(now()) - 7 * 86400 %}
+
+        {% set ns = namespace(items=[]) %}
+
+        {% for p in state_attr(''sensor.briefankuendigungen'', ''ankuendigungen'')
+        or [] %}
+
+        {% if (p.timestamp | float(0)) >= cutoff %}{% set ns.items = ns.items + [p]
+        %}{% endif %}
+
+        {% endfor %}
+
+        {% if trigger.id == ''clear'' %}{% set ns.items = [] %}
+
+        {% elif trigger.id == ''mail'' %}
+
+        {% set d = trigger.event.data %}
+
+        {% set key = (d.entry_id | default('''')) ~ '':'' ~ (d.uid | default(''''))
+        %}
+
+        {% if key not in (ns.items | map(attribute=''id'') | list) %}
+
+        {% set ns.items = [dict(id=key, timestamp=as_timestamp(now()), datum=now().isoformat(),
+        betreff=d.subject | default(''Briefankündigung''), absender=d.sender | default(''''))]
+        + ns.items %}
+
+        {% endif %}
+
+        {% endif %}
+
+        {{ ns.items[:30] }}'
+  sensor:
+  - name: Briefankuendigungen
+    unique_id: pakete_briefankuendigungen
+    icon: mdi:email-newsletter
+    state: '{{ brief_records | length }}'
+    attributes:
+      ankuendigungen: '{{ brief_records }}'
+      hinweis: Ankündigungs-Mails der letzten 7 Tage; keine bestätigte Zustellung
+        und keine Anzahl einzelner Briefe.
+- button:
+  - name: Briefankuendigungen leeren
+    unique_id: pakete_briefankuendigungen_leeren
+    icon: mdi:email-remove-outline
+    press:
+    - event: briefankuendigungen_leeren

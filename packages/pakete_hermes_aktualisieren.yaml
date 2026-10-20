@@ -1,0 +1,18 @@
+automation:
+  - id: pakete_hermes_manuell_mit_aktualisieren
+    alias: 'Pakete: Hermes manuell mit aktualisieren'
+    description: 'Aktualisiert manuell verfolgte Hermes-Sendungen mit, wenn der Hermes-Kontobutton gedrückt wird, auch über Alle aktualisieren.'
+    triggers:
+      - trigger: state
+        entity_id: button.hermes_germany_aktualisieren
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ trigger.from_state is not none and trigger.to_state is not none
+             and trigger.to_state.state not in ['unknown', 'unavailable']
+             and trigger.from_state.state != trigger.to_state.state }}
+    actions:
+      - action: button.press
+        target:
+          entity_id: button.hermes_germany_manuell_aktualisieren
+    mode: single

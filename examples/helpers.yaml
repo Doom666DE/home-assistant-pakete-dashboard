@@ -1,0 +1,16 @@
+input_text:
+  paket_trackingnummer:
+    name: Paket Trackingnummer
+    icon: mdi:barcode-scan
+    max: 40
+    min: 0
+    mode: text
+input_select:
+  paket_dienst:
+    name: Paket Dienst
+    icon: mdi:truck-outline
+    options:
+    - DHL
+    - HERMES
+    - GLS
+    - UPS
