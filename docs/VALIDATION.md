@@ -15,3 +15,9 @@ Erfolgreich lokal ausgeführt:
 - Gezielter Scan nach bekannten persönlichen Beispieldaten, JWTs, privaten Schlüsseln und hartcodierten Zugangsdaten-Zuweisungen.
 
 Dies bestätigt den exportierten Quellcode und die Offline-Fixtures. Es ist kein erneuter Ende-zu-Ende-Test realer Konten, Mailpostfächer oder CAPTCHA-Aufgaben. Die bekannten Live-Einschränkungen stehen in `STATUS.md`.
+
+## Nachprüfung: DPD-Zustelldatum
+
+`python tests/test_dpd_delivery_date.py` erfolgreich: Der Test lädt die tatsächlichen Jinja-Makros und prüft mit synthetischen Sensorwerten die Datumserkennung aus dem DPD-Statustext, den Vorrang vorhandener Zeitstempel, ungültige und mehrdeutige Datumsangaben, Dienst-/Bucket-Grenzen sowie die gerenderte Datumsanzeige und die Reihenfolge der zugestellten Karten. `python tools/validate.py` bestätigt weiterhin die Syntax und Konfigurationsstruktur.
+
+Zusätzlich wurde die bereits korrigierte Live-Ausgabe lesend geprüft: Die betroffene DPD-Sendung erhält aus ihrem Statustext `delivered_at` im ISO-Format. Persönliche Daten dieser Live-Prüfung werden nicht als Fixture gespeichert.

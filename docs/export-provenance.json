@@ -69,5 +69,14 @@
     "www\\pakete\\ups.png": "2736e60eaa5d06b286703d40cde2fb8582ab880d7d93e6915d44280d9ece58e4",
     "custom_components/ups/api.py": "9130b01e2dcf6bc1dde5f50e6023f011ff6f1e2dd5783549d044b66f5f1dd02b",
     "custom_components/ups/coordinator.py": "b53b50ea27b2e312ef9f7765295f0f6465f6076e06a6bf8f141713e031401a45"
-  }
+  },
+  "subsequent_syncs": [
+    {
+      "date": "2026-10-20",
+      "file": "custom_templates/pakete.jinja",
+      "change": "Sync existing live DPD raw_status delivery-date fallback; six-line delta only",
+      "sha256": "c9baf97ad8b574a977061c022f71b1d67289e5a852cb17842c473067e1dc510c",
+      "validation": "tests/test_dpd_delivery_date.py and tools/validate.py"
+    }
+  ]
 }

@@ -17,4 +17,10 @@ Dashboard, Jinja, eigene Python-Integrationen, Pakete und Frontend stammen aus d
 
 ## Historische Anpassungen
 
+### DPD-Zustelldatum: nachträglich synchronisiert
+
+Die bereits live vorhandene Jinja-Korrektur wurde ins Repository übernommen: Bei zugestellten DPD-Sendungen ohne `delivered_at` wird genau ein gültiges Datum im Format `TT.MM.JJJJ` aus `raw_status` übernommen. Das gilt für eingehende und ausgehende zugestellte Aggregator-Sendungen. Ein vorhandener Zustellzeitpunkt bleibt erhalten; ungültige oder mehrdeutige Angaben werden nicht geraten. Der gemeinsame normalisierte Wert wird für Anzeige und Sortierung verwendet. Ohne angegebene Uhrzeit wird nur das Datum angezeigt, keine erfundene Zustelluhrzeit.
+
+Regressionstests: `python tests/test_dpd_delivery_date.py`. Die Korrektur betrifft die Darstellung und ersetzt keine Reparatur der direkten DPD-Anmeldung.
+
 Amazon: deutschsprachige Zustellereignisse, Ablage-Ereignisse und zeitliche Einordnung. Hermes: Abholbereit/Abgeholt und Abholstellendaten. DHL: Behandlung von Brief-/Einschreibensendungen. Die aktuellen ausgewählten Dateien stehen in `upstream-snapshots/`, mit den beim Export installierten Versionsnummern. Bei neueren Upstream-Versionen können frühere lokale Anpassungen bereits enthalten oder anders umgesetzt sein.

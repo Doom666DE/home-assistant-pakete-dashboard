@@ -80,6 +80,7 @@ python tools/validate.py
 python tests/test_dpd_assist.py
 python tests/test_dpd_enrichment.py
 python tests/test_mail_sender.py
+python tests/test_dpd_delivery_date.py
 node tests/test_dpd_background.cjs
 node tests/test_dpd_extension.cjs
 python tools/build_extension.py
