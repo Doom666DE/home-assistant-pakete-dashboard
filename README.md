@@ -38,6 +38,8 @@ Bedienelemente und Rückmeldung nach dem erfolgreichen Erfassen und Schließen d
 
 ## Enthalten
 
+**Nachtrag vom 21. Oktober 2026:** Der direkte UPS-Abruf funktioniert mit dem lokal geprüften [UPS-Transportfix für ha-ups 1.1.3](docs/UPS-TRANSPORT-FIX.md) wieder. Das Installationswerkzeug ergänzt auch die benötigte Manifest-Abhängigkeit und erstellt eine Sicherung.
+
 - Aktuelles dreispaltiges Dashboard mit kompakten Zählern, zweispaltigen Sendungskarten, Statusfarben, Fortschritt, Tooltips und alphabetischer Dienstetabelle.
 - Gemeinsame `pakete.jinja`: Amazon, DHL, DPD, GLS, Hermes und UPS; Dublettenbehandlung, Abholstellen, Liefertermine und Zeiträume, getrennte ein- und ausgehende Sendungen sowie Sortierung zugestellter Sendungen.
 - Automationen für Trackingnummern aus Versandmails, Austragen zugestellter Sendungen und Aktualisieren manuell hinterlegter Hermes-Sendungen; Skript zum manuellen Hinzufügen.

@@ -5,6 +5,7 @@
 - Hermes: https://github.com/ha-parcel-integrations/ha-hermes
 - DHL: https://github.com/ha-parcel-integrations/ha-dhl
 - UPS: https://github.com/ha-parcel-integrations/ha-ups
+- Direkter UPS-Transport als zusätzliche Laufzeit-Abhängigkeit: https://github.com/lexiforest/curl_cffi (`curl_cffi==0.16.3`; das Paket wird nicht mit diesem Repository gebündelt).
 - Weitere benötigte Integrationen: https://github.com/ha-parcel-integrations
 
 Ausgewählte installierte Quellcodedateien von Amazon, Hermes, DHL und UPS sind unter `upstream-snapshots/` zu Vergleichs- und Wiederherstellungszwecken enthalten. Die zugehörigen Upstream-Lizenztexte liegen unter `upstream-snapshots/licenses/`. Die Versionsangaben stehen in `docs/integration-versions.json`. Lokale Anpassungen ändern nicht die Rechte am zugrunde liegenden Fremdcode.

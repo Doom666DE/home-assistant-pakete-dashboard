@@ -22,7 +22,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from .api import UPSApiClient, UPSApiError
+from .api import UPSApiClient, UPSApiError, TRANSPORT_VERSION
 from .budget import RequestBudget
 from .const import (
     COLD_INTERVAL_MINUTES,
@@ -373,6 +373,14 @@ class UPSCoordinator(DataUpdateCoordinator[list[dict]]):
             REQUEST_BUDGET_CAPACITY,
             REQUEST_BUDGET_REFILL_SECONDS,
         )
+        # A new, verified transport gets one retry using the existing budget.
+        # Preserve backoff on every later restart, including new transport failures.
+        if stored.get("transport_version") != TRANSPORT_VERSION:
+            self._consecutive_failures = 0
+            self._standdown_until_utc = 0.0
+            self.update_interval = timedelta(seconds=MIN_CYCLE_GAP_SECONDS)
+            self._persist_cache()
+            _LOGGER.info("UPS direct transport migrated to %s; request budget preserved", TRANSPORT_VERSION)
         # What came off disk decides whether this start polls at all, so it is
         # the first thing worth knowing when a restart behaves unexpectedly.
         _LOGGER.debug(
@@ -392,6 +400,7 @@ class UPSCoordinator(DataUpdateCoordinator[list[dict]]):
         """Queue a debounced write of the cache and the fetch floor."""
         self._store.async_delay_save(
             lambda: {
+                "transport_version": TRANSPORT_VERSION,
                 "last_fetch_utc": self._last_fetch_utc,
                 "raw_cache": self._raw_cache,
                 "delivered_codes": sorted(self._delivered_codes),

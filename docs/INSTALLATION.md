@@ -33,6 +33,8 @@ Der Zugriff ist auf die konfigurierte HA-Origin und `https://my.dpd.de/` begrenz
 
 ## Fremdintegrationen
 
+Für den am 21. Oktober live geprüften direkten UPS-Transportfix gibt es ein geprüftes Installationswerkzeug für **ha-ups 1.1.3**, einschließlich Manifest-Abhängigkeit und Sicherung: [UPS-Transportfix](UPS-TRANSPORT-FIX.md).
+
 `upstream-snapshots/` enthält ausschließlich ausgewählte Dateien als Referenz. Diese nicht als komplette Integration kopieren. Vor Übernahme mit derselben bzw. der aktuell installierten Upstream-Version vergleichen, anschließend Änderungen gezielt portieren. HACS-Updates können lokale Änderungen überschreiben.
 
 ## Datenschutz

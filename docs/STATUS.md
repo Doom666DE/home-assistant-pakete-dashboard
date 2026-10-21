@@ -1,4 +1,4 @@
-# Stand vom 20. Oktober 2026
+# Export vom 20. Oktober; UPS-Fix ergänzt am 21. Oktober 2026
 
 ## Exportstatus
 
@@ -7,7 +7,7 @@ Dashboard, Jinja, eigene Python-Integrationen, Pakete und Frontend stammen aus d
 ## Bekannte Einschränkungen
 
 - **Direkte DPD-Anmeldung:** weiterhin gestört. Die DPD-Webanmeldung kann funktionieren, während der von der HA-Integration verwendete App-/SOAP-Zugang schon vor der Passwortprüfung scheitert. Dazu wurde [Issue #21](https://github.com/ha-parcel-integrations/ha-dpd/issues/21) erstellt. Dieses Repository behebt diesen Upstream-Fehler nicht.
-- **UPS:** Abrufe können verzögert sein oder scheitern. Ein Trackingcode und ein aus einer Händlermail ergänzter Absender belegen keinen erfolgreichen aktuellen UPS-Statusabruf. „Angekündigt“ kann der tatsächlich zuletzt gelieferte Status sein.
+- **UPS:** Der direkte Abruf wurde am 21. Oktober durch einen lokalen Transportfix für ha-ups 1.1.3 wiederhergestellt und in HA mit aktuellem Status und Zustellfenster geprüft. [Einbau, Abhängigkeit und Einschränkungen](UPS-TRANSPORT-FIX.md). HACS-Updates können den Fix überschreiben; zukünftige UPS-Änderungen bleiben möglich. Ein Absender aus einer Händlermail allein belegt weiterhin keinen erfolgreichen Trackingabruf.
 - **Mail-Absender:** nur bei geeigneten Versandmails und einer eindeutig erkannten Nummer. Unterschiedliche Betreffzeilen sind möglich; eine allgemeine Garantie für jede Händler-Mail gibt es nicht. Bei mehreren Nummern wird nicht geraten.
 - **Briefankündigung:** Ankündigungs-Mail ist kein Zustellnachweis. Eine Mail kann mehrere Briefbilder enthalten.
 - **Liefertermine und Sortierung:** abhängig von den tatsächlich gelieferten Daten. Amazon-Ereignisse können fehlende Zeitstempel ergänzen; fehlende oder widersprüchliche Daten bleiben möglich.
