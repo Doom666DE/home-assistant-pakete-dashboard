@@ -151,7 +151,7 @@ def resolve_status(raw: dict) -> ParcelStatus:
     if mapped is not None:
         return mapped
     status = _resolve_without_milestone(raw, milestone)
-    if milestone and status is not ParcelStatus.UNKNOWN:
+    if milestone and milestone != "SHIPPED" and status is not ParcelStatus.UNKNOWN:
         # The milestone is the preferred source but its vocabulary is barely
         # known, so report a new one even when the timeline can stand in.
         _warn_unmapped_status(f"milestone={milestone}")
@@ -175,6 +175,9 @@ def _resolve_without_milestone(raw: dict, milestone: str | None) -> ParcelStatus
     mapped = _order_text_status(raw.get("order_status"))
     if mapped is not None:
         return mapped
+
+    if milestone == "SHIPPED":
+        return ParcelStatus.IN_TRANSIT
 
     # Nothing recognised, a line with no tracking page included: it stays
     # unknown rather than being guessed to be a parcel that is on its way.
@@ -334,7 +337,7 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
         "raw_status": _raw_status(raw),
         "delivered": delivered,
         "delivered_at": _delivered_at(raw) if delivered else None,
-        "planned_from": None,
+        "planned_from": raw.get("expected_delivery") if not delivered and parse_iso(raw.get("expected_delivery")) else None,
         "planned_to": None,
         "pickup": False,
         "pickup_point": None,

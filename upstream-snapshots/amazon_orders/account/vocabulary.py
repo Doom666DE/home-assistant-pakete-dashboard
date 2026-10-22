@@ -18,6 +18,8 @@ SKIP: Final = "skip"
 Kind = ParcelStatus | str
 
 _CONFIRMED_TEXT: tuple[tuple[str, Kind], ...] = (
+    ("zustellung:", ParcelStatus.IN_TRANSIT),
+    ("versendet", ParcelStatus.IN_TRANSIT),
     ("delivered", ParcelStatus.DELIVERED),
     ("arriving", ParcelStatus.IN_TRANSIT),
     ("shipped", ParcelStatus.IN_TRANSIT),

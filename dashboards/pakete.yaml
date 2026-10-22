@@ -982,7 +982,6 @@ views:
     - type: calendar
       entities:
       - calendar.parcel_aggregator_deliveries
-      - calendar.amazon_germany_zustellungen
       initial_view: listWeek
       grid_options:
         columns: full

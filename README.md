@@ -38,6 +38,8 @@ Bedienelemente und Rückmeldung nach dem erfolgreichen Erfassen und Schließen d
 
 ## Enthalten
 
+**Nachtrag vom 22. Oktober 2026:** [Amazon-Trackingfix und Kalenderbereinigung](docs/AMAZON-TRACKING-FIX.md): neue Trackinglinks, deutsche Bestellzeilen, angekündigte Liefertage und ganztägige Kalenderdarstellung; keine doppelte Amazon-Einbindung im Dashboard.
+
 **Nachtrag vom 21. Oktober 2026:** Der direkte UPS-Abruf funktioniert mit dem lokal geprüften [UPS-Transportfix für ha-ups 1.1.3](docs/UPS-TRANSPORT-FIX.md) wieder. Das Installationswerkzeug ergänzt auch die benötigte Manifest-Abhängigkeit und erstellt eine Sicherung.
 
 - Aktuelles dreispaltiges Dashboard mit kompakten Zählern, zweispaltigen Sendungskarten, Statusfarben, Fortschritt, Tooltips und alphabetischer Dienstetabelle.
@@ -79,6 +81,8 @@ Das Repository ist eine versionierte Projektablage, kein vollständiges Home-Ass
 ```sh
 python -m pip install -r requirements-dev.txt
 python tools/validate.py
+python tests/test_amazon_tracking.py
+python tests/test_delivery_calendar.py
 python tests/test_dpd_assist.py
 python tests/test_dpd_enrichment.py
 python tests/test_mail_sender.py

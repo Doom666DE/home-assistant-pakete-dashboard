@@ -1,4 +1,4 @@
-# Export vom 20. Oktober; UPS-Fix ergänzt am 21. Oktober 2026
+# Export vom 20. Oktober; Fixes ergänzt bis 22. Oktober 2026
 
 ## Exportstatus
 
@@ -14,6 +14,10 @@ Dashboard, Jinja, eigene Python-Integrationen, Pakete und Frontend stammen aus d
 - **Browser-Hilfe:** benötigt Chrome, geladene Erweiterung und ein geöffnetes HA-Dashboard. Die Bestätigung ist bildbezogen und kein dauerhafter Zustimmungsschalter. DPD-Seitenänderungen können Selektoren oder den Ablauf brechen.
 - **Quellcode-Snapshots:** ausgewählte Fremddateien, keine eigenständig installierbaren Forks. HACS-Updates mit diesen Dateien vergleichen.
 - **Keine automatische Bereitstellung:** der Export und spätere Git-Commits verändern Home Assistant nicht automatisch.
+
+## Amazon und Kalender: 22. Oktober 2026
+
+[Amazon-Trackingfix](AMAZON-TRACKING-FIX.md) mit direkter Unterstützung neuer Trackingseiten, deutschen Bestellzeilen und angekündigten Liefertagen. Amazon-Tageszusagen werden ganztägig angezeigt. Die aktuelle Kalenderkarte verwendet nur den Aggregator, der Amazon bereits enthält.
 
 ## Historische Anpassungen
 
