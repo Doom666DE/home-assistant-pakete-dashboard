@@ -85,4 +85,14 @@ class ModernTrackingTests(unittest.TestCase):
         raw['milestone']='DELIVERED'
         self.assertEqual(parcels.resolve_status(raw),'delivered')
 
+    def test_letterbox_delivery_preserves_date(self):
+        raw = {'milestone': 'DELIVERED', 'events': [
+            {'timestamp': '2026-10-24T00:00:00+02:00', 'message': 'Im Briefkasten hinterlegt'},
+            {'timestamp': '2026-10-23T08:00:00+02:00', 'message': 'Sendung wird zugestellt.'},
+        ]}
+        parcel = parcels.normalize_parcel(raw)
+        self.assertEqual(parcel['status'], 'delivered')
+        self.assertEqual(parcel['delivered_at'], '2026-10-24T00:00:00+02:00')
+        self.assertEqual(parcels.build_history(raw['events'])[-1]['status'], 'delivered')
+
 if __name__=='__main__': unittest.main()

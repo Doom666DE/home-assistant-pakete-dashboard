@@ -28,3 +28,9 @@ python tools/validate.py
 ```
 
 Die Offline-Tests nutzen ausschließlich erfundene IDs und HTML. Keine Konto-Seiten, Tokens oder echten Sendungsdaten werden mitgeliefert. Zusätzlich wurde der Fix live geprüft: neue Sendung, Unterwegs-Status, angekündigter Liefertag und ganztägige Kalendereinträge wurden in Home Assistant übernommen. Die Kalenderkarte wurde anschließend auf eine einzige Quelle reduziert und zurückgelesen.
+
+## Ergänzung: Zustelldatum bei Briefkastenzustellung – 24. Oktober 2026
+
+Die bestätigte Amazon-Meldung „Im Briefkasten hinterlegt“ wird als Zustellereignis erkannt. Ihr Zeitstempel füllt `delivered_at`; dadurch zeigt die Dashboard-Vorlage den Zustelltag statt eines zweiten „Zugestellt“ und sortiert die Sendung nach Zustelldatum. Liegt nur ein Tag vor, wird keine genaue Uhrzeit angezeigt.
+
+Der Regressionstest prüft Status, Zustelldatum und Verlauf mit erfundenen Daten. Die Änderung wurde zusätzlich in Home Assistant überprüft: Datum übernommen, Anzeige „Heute“, neueste Zustellung zuerst.

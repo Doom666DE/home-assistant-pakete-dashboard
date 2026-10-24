@@ -43,6 +43,7 @@ _MILESTONE_MAP: dict[str, ParcelStatus] = {
 _EVENT_MAP: dict[str, ParcelStatus] = {
     # Confirmed German messages from the Amazon.de shipment timeline.
     "zugestellt": ParcelStatus.DELIVERED,
+    "im briefkasten hinterlegt": ParcelStatus.DELIVERED,
     "an den kunden zugestellt": ParcelStatus.DELIVERED,
     "lieferung in der nähe von haustür oder veranda abgelegt": ParcelStatus.DELIVERED,
     "sendung wird zugestellt": ParcelStatus.OUT_FOR_DELIVERY,
