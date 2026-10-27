@@ -28,3 +28,7 @@ Die bereits live vorhandene Jinja-Korrektur wurde ins Repository übernommen: Be
 Regressionstests: `python tests/test_dpd_delivery_date.py`. Die Korrektur betrifft die Darstellung und ersetzt keine Reparatur der direkten DPD-Anmeldung.
 
 Amazon: deutschsprachige Zustellereignisse, Ablage-Ereignisse und zeitliche Einordnung. Hermes: Abholbereit/Abgeholt und Abholstellendaten. DHL: Behandlung von Brief-/Einschreibensendungen. Die aktuellen ausgewählten Dateien stehen in `upstream-snapshots/`, mit den beim Export installierten Versionsnummern. Bei neueren Upstream-Versionen können frühere lokale Anpassungen bereits enthalten oder anders umgesetzt sein.
+
+## DHL-Einschreiben: 27. Oktober 2026
+
+Die vorhandene [Einschreiben-Korrektur](DHL-EINSCHREIBEN-FIX.md) wurde nach einem HACS-Update live wiederhergestellt. Regressionstests sichern den eng begrenzten Ausnahmefall ab; die Dokumentation erklärt die Prüfung nach künftigen Updates.
