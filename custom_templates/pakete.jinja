@@ -125,6 +125,15 @@
 
 {#- Zeitangabe einer Sendung: Zustellzeit oder geplantes Zeitfenster -#}
 {%- macro zeit(p, an=false) -%}
+{%- set am = namespace(promise='') -%}
+{%- if (p.carrier or '') | lower == 'amazon' and not p.delivered and not p.planned_from and not p.planned_to -%}
+{%- for source in state_attr('sensor.amazon_germany_eingehende_pakete', 'parcels') or [] if source.barcode == p.barcode -%}
+{%- set msg = ((source.raw or {}).get('page_state') or {}).get('promise', {}).get('promiseMessage', '') -%}
+{%- if msg in ['Zustellung: Montag', 'Zustellung: Dienstag', 'Zustellung: Mittwoch', 'Zustellung: Donnerstag', 'Zustellung: Freitag', 'Zustellung: Samstag', 'Zustellung: Sonntag'] -%}
+{%- set am.promise = msg -%}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
 {%- set hf = namespace(value={}) -%}
 {%- if (p.carrier or '') | lower == 'hermes' and not p.delivered and p.status != 'at_pickup_point' -%}
 {%- for id in dienste.hermes.ein -%}
@@ -151,6 +160,7 @@
 {%- set von = hf_from | as_local -%}{%- set bis = hf_to | as_local -%}
 {%- set monate = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'] -%}
 {% if von.date() == bis.date() %}{{ von.day }}. {{ monate[von.month-1] }}{% elif von.year == bis.year and von.month == bis.month %}{{ von.day }}.-{{ bis.day }}. {{ monate[bis.month-1] }}{% else %}{{ von.day }}. {{ monate[von.month-1] }}-{{ bis.day }}. {{ monate[bis.month-1] }}{% endif %}
+{%- elif am.promise -%}{{ am.promise }}
 {%- else -%}Liefertermin noch nicht gemeldet
 {%- endif -%}
 {%- endmacro -%}
@@ -218,9 +228,35 @@
   'awaiting_pickup': 'sensor.amazon_germany_abholbereit',
   'delivered_parcels': 'sensor.amazon_germany_zugestellte_pakete'
 } -%}
+{#- Local dashboard fallback: independent of HACS integration source files. -#}
+{%- macro dhl_briefdatum(p, quelle) -%}
+{%- set d = ((quelle.raw | default({}, true)).get('sendungsdetails') or {}).get('sendungsverlauf') or {} -%}
+{%- set fort = d.get('fortschritt') | int(-1) -%}
+{%- set maxfort = d.get('maximalFortschritt') | int(0) -%}
+{%- set msg = (quelle.raw_status | default('', true)) | trim -%}
+{%- if (p.carrier | default('', true) | lower == 'dhl') and (p.barcode | default('', true) | regex_match('^A[0-9A-F]{19}$')) and p.barcode == quelle.barcode and fort > 0 and maxfort > 0 and fort >= maxfort and p.status in ['unknown', 'delivered'] -%}
+{%- set dates = msg | regex_findall('^Die Sendung wurde am ([0-9]{2}[.][0-9]{2}[.][0-9]{4}) ausgeliefert[.]$') -%}
+{%- set day = strptime(dates[0], '%d.%m.%Y', none) if dates else none -%}
+{%- if day -%}{{ day.date().isoformat() }}{%- endif -%}
+{%- endif -%}
+{%- endmacro -%}
+
 {%- macro pakete(bucket) -%}
 {%- set ns = namespace(l=[], seen=[]) -%}
-{%- for p in state_attr(agg ~ bucket, 'parcels') or [] -%}
+{%- set quellbriefe = state_attr('sensor.dhl_germany_ausgehende_pakete', 'parcels') or [] if bucket in ['outgoing_parcels', 'outgoing_delivered_parcels'] else [] -%}
+{%- set fallback = namespace(known=[], recent=[]) -%}
+{%- for q in quellbriefe -%}
+{%- set day = dhl_briefdatum(q, q) -%}
+{%- if day -%}
+{%- set fallback.known = fallback.known + [q.barcode] -%}
+{%- if (now().date() - timedelta(days=7)).isoformat() < day <= now().date().isoformat() -%}
+{%- set fallback.recent = fallback.recent + [dict(q, status='delivered', delivered=true, delivered_at=day, planned_from=none, planned_to=none, raw=none)] -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+{%- set basis = state_attr(agg ~ bucket, 'parcels') or [] -%}
+{%- if bucket == 'outgoing_delivered_parcels' -%}{%- set basis = basis + fallback.recent -%}{%- endif -%}
+{%- for p in basis if bucket != 'outgoing_parcels' or (p.carrier | lower != 'dhl' or p.barcode not in fallback.known) -%}
 {# DPD-Webdaten enthalten das Zustelldatum teils nur im Statustext. #}
 {%- if bucket in ['delivered_parcels', 'outgoing_delivered_parcels'] and (p.carrier | default('', true)) | lower == 'dpd' and p.delivered and not p.delivered_at -%}
 {%- set daten = (p.raw_status | default('', true)) | regex_findall('[0-9]{2}[.][0-9]{2}[.][0-9]{4}') -%}
@@ -239,7 +275,7 @@
 {%- for event in (p.raw | default({}, true)).get('events', []) or [] -%}
 {%- set message = (event.message | default('', true)) | lower | trim | trim('.!') -%}
 {%- set ts = as_timestamp(event.timestamp | default(none), 0) -%}
-{%- if message in ['zugestellt', 'an den kunden zugestellt', 'delivered to customer', 'delivered to letterbox', 'lieferung in der nähe von haustür oder veranda abgelegt'] and ts > datum.ts -%}
+{%- if message in ['zugestellt', 'an den kunden zugestellt', 'delivered to customer', 'delivered to letterbox', 'im briefkasten hinterlegt', 'lieferung in der nähe von haustür oder veranda abgelegt'] and ts > datum.ts -%}
 {%- set datum.ts = ts -%}{%- set datum.value = event.timestamp -%}
 {%- endif -%}{%- endfor -%}
 {%- if datum.value -%}{%- set p = dict(p, delivered_at=datum.value) -%}{%- endif -%}
@@ -294,7 +330,7 @@
 
 {#- Ausgehende Sendungen: erst die laufenden, dann die angekommenen -#}
 {%- macro ausgehend() -%}
-{{ liste((state_attr(agg ~ 'outgoing_parcels', 'parcels') or []) + (state_attr(agg ~ 'outgoing_delivered_parcels', 'parcels') or []), 'Keine ausgehenden Sendungen', 'mdi:package-up', true) }}
+{{ liste((pakete('outgoing_parcels') | from_json) + (pakete('outgoing_delivered_parcels') | from_json), 'Keine ausgehenden Sendungen', 'mdi:package-up', true) }}
 {%- endmacro -%}
 
 {#- Grosse Kopfkarte: naechste Zustellung -#}
@@ -359,6 +395,13 @@
 {%- endif -%}{%- endfor -%}{%- endfor -%}
 {{ ns.n }}
 {%- endmacro -%}
+{%- macro dienst_ausgang(key, angekommen=false) -%}
+{%- if key == 'dhl' -%}
+{{ pakete('outgoing_delivered_parcels' if angekommen else 'outgoing_parcels') | from_json | selectattr('carrier', 'equalto', 'DHL') | list | length }}
+{%- else -%}
+{{ summe(dienste[key].get('an' if angekommen else 'aus', [])) }}
+{%- endif -%}
+{%- endmacro -%}
 {%- macro dienst_zeile(key) -%}
 {%- set d = dienste[key] -%}
 {%- set teile = [
@@ -366,8 +409,8 @@
   [summe(d.shop) | int, 'zum Paketshop'],
   [summe(d.abhol) | int, 'abholbereit'],
   [summe(d.zu) | int, 'zugestellt'],
-  [summe(d.aus) | int, 'ausgehend'],
-  [summe(d.get('an', [])) | int, 'angekommen']
+  [dienst_ausgang(key) | int, 'ausgehend'],
+  [dienst_ausgang(key, true) | int, 'angekommen']
 ] | selectattr(0, 'gt', 0) | list -%}
 {%- if teile -%}
 {%- for t in teile -%}{{ t[0] }} {{ t[1] }}{{ ' · ' if not loop.last }}{%- endfor -%}
@@ -402,7 +445,7 @@
 {%- set bedeutungen = ['Unterwegs', 'Zum Paketshop', 'Abholbereit', 'Zugestellt', 'Ausgehend', 'Angekommen'] -%}
 {%- for i in kopf -%}{%- set label = bedeutungen[loop.index0] -%}{%- set ns.k = ns.k + ['<span class="status-kopf"><ha-icon icon="' ~ i ~ '"></ha-icon><span class="status-tooltip">' ~ label ~ '</span></span>'] -%}{%- endfor -%}
 {%- for key, d in dienste.items() -%}
-{%- set w = [dienst_unterwegs(key) | int, summe(d.shop) | int, summe(d.abhol) | int, summe(d.zu) | int, summe(d.aus) | int, summe(d.get('an', [])) | int] -%}
+{%- set w = [dienst_unterwegs(key) | int, summe(d.shop) | int, summe(d.abhol) | int, summe(d.zu) | int, dienst_ausgang(key) | int, dienst_ausgang(key, true) | int] -%}
 {%- set ns.s = [ns.s[0] + w[0], ns.s[1] + w[1], ns.s[2] + w[2], ns.s[3] + w[3], ns.s[4] + w[4]] -%}
 {%- set zs = namespace(c=[]) -%}
 {%- for x in w -%}{%- set zs.c = zs.c + ['–' if x == 0 else '**' ~ x ~ '**'] -%}{%- endfor -%}
