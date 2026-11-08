@@ -82,6 +82,8 @@ Die Korrekturen liegen in der lokalen Dashboard-Vorlage `custom_templates/pakete
 
 Details, Grenzen und Wiederherstellung: [HACS-Absicherung der Paketanzeige](docs/HACS-PAKETANZEIGE.md).
 
+So übernimmst du die neue Vorlage in Home Assistant: [pakete.jinja aktualisieren](docs/INSTALLATION.md#paketejinja-aktualisieren).
+
 ## Offline prüfen
 
 ```sh
