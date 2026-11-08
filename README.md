@@ -76,6 +76,12 @@ Dieser Export enthält **keine Passwörter, API-Schlüssel, Home-Assistant-Token
 
 Das Repository ist eine versionierte Projektablage, kein vollständiges Home-Assistant-Backup und noch kein HACS-Komplettpaket. Die Integrationen der Paketdienste werden weiterhin separat installiert. Ihre beim Export vorhandenen Versionen stehen in [integration-versions.json](docs/integration-versions.json).
 
+### DHL und Amazon nach HACS-Updates
+
+Die Korrekturen liegen in der lokalen Dashboard-Vorlage `custom_templates/pakete.jinja` und bleiben bei Updates der HACS-Integrationen erhalten. Die Vorlage korrigiert eindeutig ausgelieferte DHL-Einschreiben, die noch als offen gemeldet werden, und ergänzt bei Amazon fehlende Lieferhinweise oder Zustelldaten aus den vorhandenen Rohdaten.
+
+Details, Grenzen und Wiederherstellung: [HACS-Absicherung der Paketanzeige](docs/HACS-PAKETANZEIGE.md).
+
 ## Offline prüfen
 
 ```sh
