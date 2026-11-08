@@ -23,6 +23,15 @@ Der Export verändert die laufende Installation nicht. Ein späterer Git-Push in
 8. Entitätsnamen in Jinja und Dashboard, Config-Entry-IDs in Skripten sowie Gerätereferenzen im Dashboard mit der eigenen Installation abgleichen. Die IDs aus dem Export sind installationsabhängig und keine Zugangsdaten.
 9. Nach Prüfung der Konfiguration HA für die neuen Python-Integrationen neu starten. Für spätere reine Jinja-Änderungen genügt `homeassistant.reload_custom_templates`.
 
+## `pakete.jinja` aktualisieren
+
+1. Sichere die vorhandene Datei `/config/custom_templates/pakete.jinja`, besonders wenn du sie angepasst hast.
+2. Kopiere die [aktuelle `pakete.jinja`](../custom_templates/pakete.jinja) aus dem Repository nach `/config/custom_templates/pakete.jinja`, zum Beispiel über den File Editor oder die Samba-Freigabe. Übernimm eigene Anpassungen bei Bedarf in die neue Datei.
+3. Öffne in Home Assistant **Entwicklerwerkzeuge → Aktionen** und führe `homeassistant.reload_custom_templates` aus. Ein Neustart ist dafür nicht nötig.
+4. Prüfe die Paketanzeige. Falls die alte Anzeige noch sichtbar ist, lade das Dashboard im Browser neu. Bei einem Fehler kannst du die gesicherte Datei zurückkopieren und die Aktion erneut ausführen.
+
+Hintergrund: [HACS-Absicherung für DHL und Amazon](HACS-PAKETANZEIGE.md).
+
 ## Browser-Hilfe
 
 Die bereinigten Beispiele verwenden `http://homeassistant.local:8123` und PLZ `00000`. Vor Nutzung die tatsächliche HA-Origin **konsistent** in `browser-extension/manifest.json` und `browser-extension/background.js` setzen; die Karte erhält die PLZ über `postcode`. Auch die Beispiel-PLZ in der Dashboard-Karte und den Standardwert in `www/pakete/dpd-assist-card.js` prüfen.
