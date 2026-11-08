@@ -18,6 +18,8 @@ Sendungen oder die benötigten Rohdaten nicht mehr liefert oder deren Schema
 ändert, muss die Integration geprüft werden. Die Vorlage ändert keine
 Integration, Events oder Automationen und blockiert keine Updates.
 
+So übernimmst du die neue Vorlage in Home Assistant: [pakete.jinja aktualisieren](INSTALLATION.md#paketejinja-aktualisieren).
+
 Die bisherige HA-Vorlage liegt zur Wiederherstellung unter
 `/config/codex_backups/pakete-hacs-20261108-221550-111756/pakete.jinja`.
 Nach dem Wiederherstellen einer Vorlage `homeassistant.reload_custom_templates`
