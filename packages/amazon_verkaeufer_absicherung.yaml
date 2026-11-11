@@ -1,0 +1,43 @@
+shell_command:
+  amazon_verkaeufer_absichern: >-
+    python3 /config/amazon_seller_guard/apply.py
+    /config/custom_components/amazon_orders
+
+automation:
+  - id: amazon_verkaeufer_nach_hacs_absichern
+    alias: Amazon Verkäufer nach HACS absichern
+    mode: queued
+    triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: state
+        entity_id: update.amazon_update
+        attribute: installed_version
+      - trigger: time_pattern
+        hours: "/1"
+    actions:
+      - action: shell_command.amazon_verkaeufer_absichern
+        response_variable: ergebnis
+      - choose:
+          - conditions: "{{ ergebnis.returncode != 0 }}"
+            sequence:
+              - action: persistent_notification.create
+                data:
+                  notification_id: amazon_verkaeufer_update_fehler
+                  title: Amazon Verkäufer-Erkennung prüfen
+                  message: >-
+                    Die Verkäufer-Erkennung konnte nicht sicher auf die
+                    installierte Amazon-Version übertragen werden.
+                    {{ ergebnis.stderr | trim }}
+          - conditions: "{{ ergebnis.stdout | trim == 'applied' }}"
+            sequence:
+              - action: persistent_notification.dismiss
+                data:
+                  notification_id: amazon_verkaeufer_update_fehler
+              - action: persistent_notification.create
+                data:
+                  notification_id: amazon_verkaeufer_update
+                  title: Amazon Verkäufer-Erkennung wiederhergestellt
+                  message: >-
+                    Die Verkäufer-Erkennung ist wieder in der Amazon-Integration
+                    hinterlegt. Ein Neustart von Home Assistant lädt die Änderung.

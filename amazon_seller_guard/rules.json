@@ -1,0 +1,26 @@
+{
+  "account/client.py": [
+    [
+      "from .parcels import _delivered_at",
+      "from .order_sellers import sellers_for_items\nfrom .parcels import _delivered_at"
+    ],
+    [
+      "        # Shipments read in full once delivered",
+      "        self._seller_details: dict[str, tuple[date, dict[tuple[str, ...], str | None]]] = {}\n        # Shipments read in full once delivered"
+    ],
+    [
+      "    async def async_get_parcels",
+      "    async def _add_sellers(self, records: list[dict[str, Any]], today: date) -> None:\n        orders: dict[str, list[dict[str, Any]]] = {}\n        for record in records:\n            if record.get(\"tracking_id\") and record.get(\"items\"):\n                orders.setdefault(record[\"order_id\"], []).append(record)\n        self._seller_details = {\n            order: cached for order, cached in self._seller_details.items()\n            if order in orders\n        }\n        fetched = False\n        ordered = sorted(\n            orders,\n            key=lambda order: not any(\n                (record.get(\"carrier_code\") or \"\").upper() in {\"DPD\", \"DHL\"}\n                for record in orders[order]\n            ),\n        )\n        for order in ordered:\n            shipments = orders[order]\n            checked, sellers = self._seller_details.get(order, (date.min, {}))\n            titles = {tuple(record[\"items\"]) for record in shipments}\n            missing = any(not sellers.get(items) for items in titles)\n            if missing and checked < today and not fetched:\n                fetched = True\n                try:\n                    query = URL.build(query={\"orderID\": order}).query_string\n                    async with asyncio.timeout(12):\n                        page = await self._fetch_page(\n                            \"/gp/your-account/order-details?\" + query,\n                            headers={\n                                \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) \"\n                                \"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\",\n                                \"Accept-Language\": \"de-DE,de;q=0.9,en;q=0.8\",\n                            },\n                        )\n                except (AmazonApiError, aiohttp.ClientError, TimeoutError):\n                    self._seller_details[order] = (today, sellers)\n                else:\n                    sellers = {\n                        **sellers,\n                        **{items: sellers_for_items(page, items) for items in titles\n                           if not sellers.get(items)},\n                    }\n                    self._seller_details[order] = (today, sellers)\n            for record in shipments:\n                if seller := sellers.get(tuple(record[\"items\"])):\n                    record[\"order_seller\"] = seller\n\n    async def async_get_parcels"
+    ],
+    [
+      "        return records\n",
+      "        await self._add_sellers(records, today)\n        return records\n"
+    ]
+  ],
+  "sensor.py": [
+    [
+      "        return {\"parcels\": self.coordinator.data or []}",
+      "        return {\n            \"parcels\": self.coordinator.data or [],\n            \"order_sellers\": {\n                parcel[\"barcode\"].upper(): seller\n                for parcel in self.coordinator._all_parcels\n                if (seller := parcel[\"raw\"].get(\"order_seller\"))\n            },\n        }"
+    ]
+  ]
+}

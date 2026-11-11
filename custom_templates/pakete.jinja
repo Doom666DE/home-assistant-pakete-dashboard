@@ -166,8 +166,26 @@
 {%- endmacro -%}
 
 {%- macro absender(p) -%}
+{%- set code = (p.barcode or '') | string | upper | replace(' ', '') -%}
+{%- set carrier = (p.carrier or '') | lower -%}
 {%- set records = state_attr('sensor.dpd_zusatzinformationen', 'records') or {} -%}
-{{ p.sender or records.get(p.barcode | string | upper, {}).get('sender', '') or ('Amazon' if (p.carrier or '') | lower == 'amazon' else 'Unbekannter Absender') }}
+{%- set seller = (state_attr('sensor.amazon_germany_eingehende_pakete', 'order_sellers') or {}).get(code) -%}
+{%- set name = p.sender or records.get(code, {}).get('sender', '') or (seller ~ ' (Verkäufer)' if seller else '') -%}
+{%- if name -%}
+{{ name }}
+{%- elif carrier == 'amazon' -%}Amazon
+{%- else -%}
+{%- set quelle = namespace(amazon=false) -%}
+{%- if code -%}
+{%- for id in amazon_buckets.values() -%}
+{%- for q in state_attr(id, 'parcels') or []
+  if (q.barcode | string | upper | replace(' ', '')) == code -%}
+{%- set quelle.amazon = true -%}
+{%- endfor -%}
+{%- endfor -%}
+{%- endif -%}
+{{ 'Amazon-Bestellung' if quelle.amazon else 'Unbekannter Absender' }}
+{%- endif -%}
 {%- endmacro -%}
 
 {#- Eine Sendungsliste als HTML-Block ohne Leerzeilen, damit Markdown ihn unveraendert durchreicht.
@@ -282,7 +300,7 @@
 {%- endif -%}
 {%- set key = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
 {%- if not key or key not in ns.seen -%}
-{%- set ns.l = ns.l + [dict(p, sender=p.sender or 'Amazon')] -%}
+{%- set ns.l = ns.l + [p] -%}
 {%- set ns.seen = ns.seen + [key] -%}
 {%- endif -%}{%- endfor -%}{%- endif -%}
 {%- if bucket == 'incoming_parcels' -%}

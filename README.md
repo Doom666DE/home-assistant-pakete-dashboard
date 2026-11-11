@@ -82,6 +82,8 @@ Die Korrekturen liegen in der lokalen Dashboard-Vorlage `custom_templates/pakete
 
 Details, Grenzen und Wiederherstellung: [HACS-Absicherung der Paketanzeige](docs/HACS-PAKETANZEIGE.md).
 
+Die automatische Amazon-Verkäufer-Erkennung hat eine eigene Automation. Sie stellt die Funktion nach kompatiblen HACS-Updates wieder her. [Installation und Verhalten](docs/HACS-PAKETANZEIGE.md#automatische-amazon-verkäufer-erkennung).
+
 So übernimmst du die neue Vorlage in Home Assistant: [pakete.jinja aktualisieren](docs/INSTALLATION.md#paketejinja-aktualisieren).
 
 ## Offline prüfen
