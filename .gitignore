@@ -15,3 +15,4 @@ __pycache__/
 node_modules/
 local/
 captures/
+/amazon_seller_guard/backups/
