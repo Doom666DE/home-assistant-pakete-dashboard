@@ -52,7 +52,7 @@ class DeliveryCalendarTests(unittest.TestCase):
                     event=obj._events()[0]
                     self.assertEqual((event.start.hour,event.start.minute,event.end.hour,event.end.minute),(13,45,16,45))
 
-    def test_dashboard_has_one_calendar_source(self):
+    def test_dashboard_includes_native_and_fallback_calendars(self):
         config=yaml.safe_load((ROOT/'dashboards/pakete.yaml').read_text('utf-8'))
         def cards(node):
             if isinstance(node,dict):
@@ -62,7 +62,10 @@ class DeliveryCalendarTests(unittest.TestCase):
                 for value in node: yield from cards(value)
         calendars=list(cards(config))
         self.assertEqual(len(calendars),1)
-        self.assertEqual(calendars[0]['entities'],['calendar.parcel_aggregator_deliveries'])
+        self.assertEqual(calendars[0]['entities'], [
+            'calendar.parcel_aggregator_deliveries',
+            'calendar.paket_liefertermine_zusatz',
+        ])
 
 if __name__=='__main__':
     unittest.main()

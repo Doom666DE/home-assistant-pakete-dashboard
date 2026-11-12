@@ -109,7 +109,8 @@
 {%- endmacro -%}
 
 {%- macro tag(ts) -%}
-{%- set d = as_datetime(ts) | as_local -%}
+{%- set dt = as_datetime(ts) -%}
+{%- set d = dt if ts is string and ts | length == 10 else dt | as_local -%}
 {%- set diff = (d.date() - now().date()).days -%}
 {%- if diff == 0 -%}Heute
 {%- elif diff == 1 -%}Morgen
@@ -119,21 +120,27 @@
 {%- endmacro -%}
 
 {%- macro uhr(ts) -%}
-{%- set d = as_datetime(ts) | as_local -%}
+{%- set dt = as_datetime(ts) -%}
+{%- set d = dt if ts is string and ts | length == 10 else dt | as_local -%}
 {%- if d.hour != 0 or d.minute != 0 -%}{{ d.strftime('%H:%M') }}{%- endif -%}
 {%- endmacro -%}
 
 {#- Zeitangabe einer Sendung: Zustellzeit oder geplantes Zeitfenster -#}
 {%- macro zeit(p, an=false) -%}
-{%- set am = namespace(promise='') -%}
-{%- if (p.carrier or '') | lower == 'amazon' and not p.delivered and not p.planned_from and not p.planned_to -%}
+{%- set am = namespace(promise='', window=[]) -%}
+{%- if not p.delivered and not p.planned_from and not p.planned_to -%}
 {%- for source in state_attr('sensor.amazon_germany_eingehende_pakete', 'parcels') or [] if source.barcode == p.barcode -%}
 {%- set msg = ((source.raw or {}).get('page_state') or {}).get('promise', {}).get('promiseMessage', '') -%}
+{%- set window = amazon_lieferzeitraum(msg, as_datetime(states('sensor.amazon_germany_letzte_erfolgreiche_aktualisierung'), none)) | from_json -%}
+{%- if window -%}
+{%- set am.window = window -%}
+{%- endif -%}
 {%- if msg in ['Zustellung: Montag', 'Zustellung: Dienstag', 'Zustellung: Mittwoch', 'Zustellung: Donnerstag', 'Zustellung: Freitag', 'Zustellung: Samstag', 'Zustellung: Sonntag'] -%}
 {%- set am.promise = msg -%}
 {%- endif -%}
 {%- endfor -%}
 {%- endif -%}
+{%- if am.window -%}{%- set p = dict(p, planned_from=am.window[0], planned_to=am.window[1]) -%}{%- endif -%}
 {%- set hf = namespace(value={}) -%}
 {%- if (p.carrier or '') | lower == 'hermes' and not p.delivered and p.status != 'at_pickup_point' -%}
 {%- for id in dienste.hermes.ein -%}
@@ -149,6 +156,9 @@
 {{ tag(p.delivered_at) }}{% if uhr(p.delivered_at) %}, {{ uhr(p.delivered_at) }}{% endif %}
 {%- elif p.status == 'at_pickup_point' -%}Liegt bereit
 {%- elif p.delivered -%}{{ 'Angekommen' if an else 'Zugestellt' }}
+{%- elif pf and pt and p.planned_from | length == 10 and p.planned_to | length == 10 and pf != pt -%}
+{%- set monate = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'] -%}
+{{ pf.day }}.{{ ' ' ~ monate[pf.month - 1] if pf.month != pt.month else '' }}–{{ pt.day }}. {{ monate[pt.month - 1] }}
 {%- elif pf and pt and (pf | as_local).date() != (pt | as_local).date() -%}
 {{ tag(p.planned_from) }}–{{ tag(p.planned_to) }}
 {%- elif pf and pt and uhr(p.planned_from) and uhr(p.planned_to) and uhr(p.planned_from) != uhr(p.planned_to) -%}
@@ -190,12 +200,22 @@
 
 {#- Eine Sendungsliste als HTML-Block ohne Leerzeilen, damit Markdown ihn unveraendert durchreicht.
     an=true zeigt den Empfaenger statt des Absenders (ausgehende Sendungen). -#}
-{%- macro liste(parcels, leer='Keine Sendungen', leer_icon='mdi:package-variant', an=false) -%}
+{%- macro liste(parcels, leer='Keine Sendungen', leer_icon='mdi:package-variant', an=false, gruppiert=false) -%}
 <div class="pkl">
 {%- if not parcels -%}
 <div class="leer"><ha-icon icon="{{ leer_icon }}"></ha-icon><span>{{ leer }}</span></div>
 {%- else -%}
 {%- for p in parcels -%}
+{%- if gruppiert and loop.changed(p.status == 'registered') -%}
+{%- set ist_ankuendigung = p.status == 'registered' -%}
+{%- set status_liste = parcels | rejectattr('status', 'eq', 'registered') | map(attribute='status') | list -%}
+{%- set nur_unterwegs = status_liste and not (status_liste | reject('in', unterwegs_status) | list) -%}
+{%- set nur_abholbereit = status_liste and not (status_liste | reject('eq', 'at_pickup_point') | list) -%}
+{%- set anzahl_gruppe = parcels | length - status_liste | length -%}
+{%- set gruppentitel = 'Angekündigt' if ist_ankuendigung else 'Unterwegs' if nur_unterwegs else 'Abholbereit' if nur_abholbereit else 'Weitere offene Sendungen' -%}
+{%- set gruppenicon = 'mdi:tag-outline' if ist_ankuendigung else 'mdi:truck-fast-outline' if nur_unterwegs else 'mdi:storefront-outline' if nur_abholbereit else 'mdi:package-variant-closed' -%}
+<div><ha-icon icon="{{ gruppenicon }}"></ha-icon><strong>{{ gruppentitel }}</strong><span>{{ anzahl_gruppe if ist_ankuendigung else parcels | length - anzahl_gruppe }}</span></div>
+{%- endif -%}
 {%- set m = status_meta.get(p.status, status_meta.unknown) -%}
 {%- if (p.delivered or p.status == 'delivered') and p.status != 'at_pickup_point' -%}
 {%- set m = ['Angekommen' if an else 'Zugestellt', 'mdi:check-circle', 'gruen', 4] -%}
@@ -318,8 +338,14 @@
 {{ filtered.l | to_json }}
 {%- else -%}{{ ns.l | to_json }}{%- endif -%}
 {%- endmacro -%}
+{%- set unterwegs_status = ['in_transit', 'out_for_delivery'] -%}
 {%- macro anzahl(bucket) -%}
+{%- if bucket in ['incoming_parcels', 'announced_parcels'] -%}
+{%- set status = unterwegs_status if bucket == 'incoming_parcels' else ['registered'] -%}
+{{ pakete('incoming_parcels') | from_json | selectattr('status', 'in', status) | list | length }}
+{%- else -%}
 {{ pakete(bucket) | from_json | length }}
+{%- endif -%}
 {%- endmacro -%}
 
 {#- Aktive Sendungen aller Dienste: dringendste zuerst, dann nach Termin -#}
@@ -330,10 +356,10 @@
 {%- set key = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
 {%- if not key or key not in ns.seen -%}
 {%- set ns.seen = ns.seen + [key] -%}
-{%- set ns.l = ns.l + [[status_prio.get(p.status, 6), p.planned_from or '9999', p]] -%}
+{%- set ns.l = ns.l + [[p.status == 'registered', status_prio.get(p.status, 6), p.planned_from or '9999', p]] -%}
 {%- endif -%}{%- endfor -%}
 {%- endfor -%}
-{{ liste(ns.l | sort(attribute='1') | sort(attribute='0') | map(attribute='2') | list, 'Keine aktiven Sendungen', 'mdi:package-variant-closed-check') }}
+{{ liste(ns.l | sort(attribute='0,1,2') | map(attribute='3') | list, 'Keine offenen Sendungen', 'mdi:package-variant-closed-check', gruppiert=true) }}
 {%- endmacro -%}
 
 {#- Zuletzt zugestellte Sendungen, neueste zuerst -#}
@@ -351,17 +377,97 @@
 {{ liste((pakete('outgoing_parcels') | from_json) + (pakete('outgoing_delivered_parcels') | from_json), 'Keine ausgehenden Sendungen', 'mdi:package-up', true) }}
 {%- endmacro -%}
 
+{#- Nur einen einzelnen, datierten Amazon-Liefertag uebernehmen. -#}
+{%- macro amazon_liefertag(message, gelesen, vergangen=false) -%}
+{%- set treffer = message | default('', true) | lower | trim
+  | regex_findall('^zustellung: (?:[a-zäöü]+, )?([0-9]{1,2})[.] ([a-zäöü]+)[.]?(?: ([0-9]{4}))?$') -%}
+{%- set monate = {'januar':1,'jan':1,'februar':2,'feb':2,'märz':3,'mrz':3,'april':4,'apr':4,'mai':5,'juni':6,'jun':6,'juli':7,'jul':7,'august':8,'aug':8,'september':9,'sep':9,'sept':9,'oktober':10,'okt':10,'november':11,'nov':11,'dezember':12,'dez':12} -%}
+{%- if treffer and gelesen -%}
+{%- set tag, name, jahr = treffer[0] -%}
+{%- set monat = monate.get(name) -%}
+{%- if monat -%}
+{%- set basis = (gelesen | as_local).date() -%}
+{%- for j in ([jahr | int] if jahr else [basis.year - 1, basis.year, basis.year + 1]) -%}
+{%- set d = strptime('%04d-%02d-%02d' | format(j, monat, tag | int), '%Y-%m-%d', none) -%}
+{%- if d and (vergangen or now().date() <= d.date()) and (jahr or (-30 if vergangen else 0) <= (d.date() - basis).days <= 30) -%}
+{{- d.date().isoformat() -}}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro amazon_lieferzeitraum(message, gelesen) -%}
+{%- set text = message | default('', true) | trim -%}
+{%- set relativ = {'ankunft heute': 0, 'ankunft morgen': 1, 'zustellung heute': 0, 'zustellung morgen': 1} -%}
+{%- set tage = relativ.get(text | lower) -%}
+{%- if tage is not none -%}
+{%- set datum = (gelesen | as_local).date() + timedelta(days=tage) if gelesen else none -%}
+{{ ([datum.isoformat(), datum.isoformat()] if datum and datum >= now().date() else []) | to_json }}
+{%- else -%}
+{%- set teile = (text | regex_replace('\\s+[-–—]\\s+', '|')).split('|') -%}
+{%- if teile | length == 2 -%}
+{%- set von = amazon_liefertag(teile[0], gelesen, true) -%}
+{%- set bis = amazon_liefertag('Zustellung: ' ~ teile[1], gelesen) -%}
+{%- if von and bis and von <= bis and (as_datetime(bis) - as_datetime(von)).days <= 30 -%}
+{{ [von, bis] | to_json }}
+{%- else -%}[]{%- endif -%}
+{%- else -%}
+{%- set datum = amazon_liefertag(text, gelesen) -%}
+{{ ([datum, datum] if datum else []) | to_json }}
+{%- endif -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro amazon_termine() -%}
+{%- set ns = namespace(events=[], native=[]) -%}
+{%- set gelesen = as_datetime(states('sensor.amazon_germany_letzte_erfolgreiche_aktualisierung'), none) -%}
+{%- for p in state_attr(agg ~ 'incoming_parcels', 'parcels') or [] if p.planned_from -%}
+{%- set ns.native = ns.native + [p.barcode | string | upper | replace(' ', '')] -%}
+{%- endfor -%}
+{%- for p in pakete('incoming_parcels') | from_json if p.barcode and not p.planned_from and not p.planned_to -%}
+{%- set code = p.barcode | string | upper | replace(' ', '') -%}
+{%- if code not in ns.native -%}
+{%- for q in state_attr(amazon_buckets.incoming_parcels, 'parcels') or []
+  if (q.barcode | string | upper | replace(' ', '')) == code -%}
+{%- set msg = ((q.raw | default({}, true)).get('page_state') or {}).get('promise', {}).get('promiseMessage') -%}
+{%- set window = amazon_lieferzeitraum(msg, gelesen) | from_json -%}
+{%- if window -%}
+{%- set ns.events = ns.events + [dict(p, planned_from=window[0], planned_to=window[1], barcode=code)] -%}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{%- endfor -%}
+{{ ns.events | unique(attribute='barcode') | list | to_json }}
+{%- endmacro -%}
+
 {#- Grosse Kopfkarte: naechste Zustellung -#}
 {%- macro held(p=none) -%}
-{%- set kandidat = namespace(p=state_attr(agg ~ 'next_delivery', 'parcel'), ts=none) -%}
-{%- set kandidat.ts = as_timestamp(kandidat.p.planned_from, none) if kandidat.p else none -%}
-{%- for a in pakete('incoming_parcels') | from_json if a.planned_from -%}
-{%- set ts = as_timestamp(a.planned_from, none) -%}
-{%- if ts is not none and (kandidat.ts is none or ts < kandidat.ts) -%}
-{%- set kandidat.p = a -%}{%- set kandidat.ts = ts -%}
-{%- endif -%}{%- endfor -%}
+{%- set kandidat = namespace(p=none, rang=none) -%}
+{%- set heute = now().date() -%}
+{%- set aggregiert = state_attr(agg ~ 'next_delivery', 'parcel') -%}
+{%- set sendungen = (pakete('incoming_parcels') | from_json) + (amazon_termine() | from_json) + ([aggregiert] if aggregiert else []) -%}
+{%- for a in sendungen if a.planned_from -%}
+{%- set start = as_datetime(a.planned_from, none) -%}
+{%- set ende = as_datetime(a.planned_to, none) or start -%}
+{%- if start and ende -%}
+{%- set nur_datum = a.planned_from is string and a.planned_from | length == 10 -%}
+{%- set ende_nur_datum = a.planned_to is string and a.planned_to | length == 10 -%}
+{%- set start_lokal = start if nur_datum else start | as_local -%}
+{%- set ende_lokal = ende if ende_nur_datum or (nur_datum and not a.planned_to) else ende | as_local -%}
+{%- if ende_lokal.date() >= heute -%}
+{%- set tag = [start_lokal.date(), heute] | max -%}
+{%- set rang = [tag, a.status != 'out_for_delivery', nur_datum, as_timestamp(start_lokal)] -%}
+{%- if kandidat.rang is none or rang < kandidat.rang -%}
+{%- set kandidat.p = a -%}
+{%- set kandidat.rang = rang -%}
+{%- endif -%}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
 {%- set p = p if p else kandidat.p -%}
 {%- set ein = anzahl('incoming_parcels') | int(0) -%}
+{%- set angekuendigt = anzahl('announced_parcels') | int(0) -%}
 {%- set abhol = anzahl('awaiting_pickup') | int(0) -%}
 <div class="held">
 {%- if p -%}
@@ -372,16 +478,14 @@
 <div class="gross">{{ zeit(p) }}</div>
 <div class="von">{{ absender(p) | e }} · {{ (p.carrier or '') | replace(' (DE)', '') | e }}</div>
 <div class="hpills"><span class="pill"><ha-icon icon="{{ m[1] }}"></ha-icon>{{ m[0] }}</span>
-{%- if ein > 1 -%}<span class="pill">+{{ ein - 1 }} weitere unterwegs</span>{%- endif -%}
-{%- if abhol > 0 -%}<span class="pill"><ha-icon icon="mdi:storefront-outline"></ha-icon>{{ abhol }} abholbereit</span>{%- endif -%}
 </div>
 </div>
-{%- elif ein > 0 or abhol > 0 -%}
+{%- elif ein > 0 or angekuendigt > 0 or abhol > 0 -%}
 <div class="hicon"><ha-icon icon="mdi:package-variant-closed"></ha-icon></div>
 <div class="htx">
 <div class="ueber">Pakete</div>
-<div class="gross">{{ ein }} unterwegs</div>
-<div class="von">Noch kein Zustelltermin bekannt</div>
+<div class="gross">Liefertermine offen</div>
+<div class="von">Sobald ein Liefertermin gemeldet wird, erscheint er hier.</div>
 {%- if abhol > 0 -%}<div class="hpills"><span class="pill"><ha-icon icon="mdi:storefront-outline"></ha-icon>{{ abhol }} abholbereit</span></div>{%- endif -%}
 </div>
 {%- else -%}
@@ -395,38 +499,32 @@
 </div>
 {%- endmacro -%}
 
-{#- Texte fuer die Paketdienst-Karten -#}
-{# Unterwegs schliesst bereits abholbereite, zugestellte und separat zum Shop gezaehlte Sendungen aus. #}
-{%- macro dienst_unterwegs(key) -%}
-{%- set d = dienste[key] -%}
-{%- set ns = namespace(n=0, seen=[], excluded=[]) -%}
-{%- for id in d.shop + d.abhol + d.zu -%}
-{%- for p in state_attr(id, 'parcels') or [] -%}
-{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
-{%- if code -%}{%- set ns.excluded = ns.excluded + [code] -%}{%- endif -%}
-{%- endfor -%}{%- endfor -%}
-{%- for id in d.ein -%}
-{%- for p in state_attr(id, 'parcels') or [] -%}
-{%- set code = (p.barcode or p.url or '') | string | upper | replace(' ', '') -%}
-{%- if p.status not in ['at_pickup_point', 'delivered'] and not p.delivered and (not code or (code not in ns.excluded and code not in ns.seen)) -%}
-{%- set ns.n = ns.n + 1 -%}{%- set ns.seen = ns.seen + [code] -%}
-{%- endif -%}{%- endfor -%}{%- endfor -%}
+{%- macro dienst_anzahl(key, bucket, status=none) -%}
+{%- set ns = namespace(n=0) -%}
+{%- for p in pakete(bucket) | from_json -%}
+{%- set carrier = (p.carrier | default('', true) | lower).split(' (')[0] -%}
+{%- if carrier == key and (status is none or p.status in status) -%}
+{%- set ns.n = ns.n + 1 -%}
+{%- endif -%}
+{%- endfor -%}
 {{ ns.n }}
 {%- endmacro -%}
-{%- macro dienst_ausgang(key, angekommen=false) -%}
-{%- if key == 'dhl' -%}
-{{ pakete('outgoing_delivered_parcels' if angekommen else 'outgoing_parcels') | from_json | selectattr('carrier', 'equalto', 'DHL') | list | length }}
-{%- else -%}
-{{ summe(dienste[key].get('an' if angekommen else 'aus', [])) }}
-{%- endif -%}
+
+{%- macro dienst_unterwegs(key) -%}
+{{ dienst_anzahl(key, 'incoming_parcels', unterwegs_status) }}
 {%- endmacro -%}
+
+{%- macro dienst_ausgang(key, angekommen=false) -%}
+{{ dienst_anzahl(key, 'outgoing_delivered_parcels' if angekommen else 'outgoing_parcels') }}
+{%- endmacro -%}
+
 {%- macro dienst_zeile(key) -%}
-{%- set d = dienste[key] -%}
 {%- set teile = [
   [dienst_unterwegs(key) | int, 'unterwegs'],
-  [summe(d.shop) | int, 'zum Paketshop'],
-  [summe(d.abhol) | int, 'abholbereit'],
-  [summe(d.zu) | int, 'zugestellt'],
+  [dienst_anzahl(key, 'incoming_parcels', ['registered']) | int, 'angekündigt'],
+  [dienst_anzahl(key, 'en_route_to_pickup_point') | int, 'zum Paketshop'],
+  [dienst_anzahl(key, 'awaiting_pickup') | int, 'abholbereit'],
+  [dienst_anzahl(key, 'delivered_parcels') | int, 'zugestellt'],
   [dienst_ausgang(key) | int, 'ausgehend'],
   [dienst_ausgang(key, true) | int, 'angekommen']
 ] | selectattr(0, 'gt', 0) | list -%}
@@ -447,29 +545,24 @@
 
 {#- Anzahl Sendungen eines Dienstes, die heute in Zustellung sind -#}
 {%- macro dienst_zustellung(key) -%}
-{%- set ns = namespace(n=0) -%}
-{%- for id in dienste[key].ein -%}
-{%- for p in state_attr(id, 'parcels') or [] if p.status == 'out_for_delivery' -%}{%- set ns.n = ns.n + 1 -%}{%- endfor -%}
-{%- endfor -%}
-{{ ns.n }}
+{{ dienst_anzahl(key, 'incoming_parcels', ['out_for_delivery']) }}
 {%- endmacro -%}
 
 {#- Tabelle "Pakete nach Paketdienst" als echte Markdown-Tabelle mit Zeilenumbruechen.
     Spaltenkoepfe sind dieselben Icons wie bei den Zaehler-Kacheln: unterwegs, zum Paketshop,
     abholbereit, zugestellt, ausgehend. -#}
 {%- macro tabelle() -%}
-{%- set kopf = ['mdi:truck-fast-outline', 'mdi:map-marker-path', 'mdi:storefront-outline', 'mdi:package-variant-closed-check', 'mdi:package-up', 'mdi:check-all'] -%}
-{%- set ns = namespace(z=[], s=[0, 0, 0, 0, 0], k=[]) -%}
-{%- set bedeutungen = ['Unterwegs', 'Zum Paketshop', 'Abholbereit', 'Zugestellt', 'Ausgehend', 'Angekommen'] -%}
+{%- set kopf = ['mdi:tag-outline', 'mdi:truck-fast-outline', 'mdi:map-marker-path', 'mdi:storefront-outline', 'mdi:package-variant-closed-check', 'mdi:package-up', 'mdi:check-all'] -%}
+{%- set ns = namespace(z=[], k=[]) -%}
+{%- set bedeutungen = ['Angekündigt', 'Unterwegs', 'Zum Paketshop', 'Abholbereit', 'Zugestellt', 'Ausgehend', 'Angekommen'] -%}
 {%- for i in kopf -%}{%- set label = bedeutungen[loop.index0] -%}{%- set ns.k = ns.k + ['<span class="status-kopf"><ha-icon icon="' ~ i ~ '"></ha-icon><span class="status-tooltip">' ~ label ~ '</span></span>'] -%}{%- endfor -%}
 {%- for key, d in dienste.items() -%}
-{%- set w = [dienst_unterwegs(key) | int, summe(d.shop) | int, summe(d.abhol) | int, summe(d.zu) | int, dienst_ausgang(key) | int, dienst_ausgang(key, true) | int] -%}
-{%- set ns.s = [ns.s[0] + w[0], ns.s[1] + w[1], ns.s[2] + w[2], ns.s[3] + w[3], ns.s[4] + w[4]] -%}
+{%- set w = [dienst_anzahl(key, 'incoming_parcels', ['registered']) | int, dienst_unterwegs(key) | int, dienst_anzahl(key, 'en_route_to_pickup_point') | int, dienst_anzahl(key, 'awaiting_pickup') | int, dienst_anzahl(key, 'delivered_parcels') | int, dienst_ausgang(key) | int, dienst_ausgang(key, true) | int] -%}
 {%- set zs = namespace(c=[]) -%}
 {%- for x in w -%}{%- set zs.c = zs.c + ['–' if x == 0 else '**' ~ x ~ '**'] -%}{%- endfor -%}
 {%- set ns.z = ns.z + ['| <img class="tl" src="' ~ logo_url(key) ~ '" width="24"> | ' ~ d.name ~ ' | ' ~ (zs.c | join(' | ')) ~ ' |'] -%}
 {%- endfor -%}
-{{ '|  | Dienst | ' ~ (ns.k | join(' | ')) ~ ' |\n| :-: | :-- | :-: | :-: | :-: | :-: | :-: | :-: |\n' ~ (ns.z | join('\n')) ~ '\n|  | Gesamt | **' ~ ([anzahl('incoming_parcels'), anzahl('en_route_to_pickup_point'), anzahl('awaiting_pickup'), anzahl('delivered_parcels'), anzahl('outgoing_parcels'), anzahl('outgoing_delivered_parcels')] | join('** | **')) ~ '** |' }}
+{{ '|  | Dienst | ' ~ (ns.k | join(' | ')) ~ ' |\n| :-: | :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |\n' ~ (ns.z | join('\n')) ~ '\n|  | Gesamt | **' ~ ([anzahl('announced_parcels'), anzahl('incoming_parcels'), anzahl('en_route_to_pickup_point'), anzahl('awaiting_pickup'), anzahl('delivered_parcels'), anzahl('outgoing_parcels'), anzahl('outgoing_delivered_parcels')] | join('** | **')) ~ '** |' }}
 {%- endmacro -%}
 
 {#- Beispieldaten, um das Layout mit Sendungen zu pruefen: {{ liste(demo('aktiv') | from_json) }} -#}

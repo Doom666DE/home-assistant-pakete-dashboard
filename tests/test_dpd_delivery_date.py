@@ -1,7 +1,7 @@
 """Exercise the real shared Jinja macros with synthetic parcel sensor data."""
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from jinja2 import Environment
@@ -39,11 +39,12 @@ def macros(parcels, bucket='delivered_parcels'):
     env = Environment()
     env.filters.update(to_json=json.dumps, from_json=json.loads,
                        regex_findall=lambda value, pattern: re.findall(pattern, value),
+                       regex_replace=lambda value, pattern, replacement: re.sub(pattern, replacement, value),
                        as_local=as_local, as_datetime=as_datetime, as_timestamp=as_timestamp)
     env.globals.update(
         state_attr=lambda entity, attr: parcels if entity == 'sensor.parcel_aggregator_' + bucket and attr == 'parcels' else None,
         states=lambda entity: '0', as_datetime=as_datetime, as_timestamp=as_timestamp,
-        strptime=strptime, now=lambda: datetime(2026, 10, 20, 12, tzinfo=TZ))
+        strptime=strptime, timedelta=timedelta, now=lambda: datetime(2026, 10, 20, 12, tzinfo=TZ))
     return env.from_string(Path('custom_templates/pakete.jinja').read_text('utf8')).module
 
 def normalized(item, bucket='delivered_parcels'):
@@ -69,3 +70,17 @@ html = macros([older, parcel()]).zugestellt()
 assert html.index('Beispielversand') < html.index('Aeltere Sendung')
 assert 'Mi, 14.10.' in html
 print('PASS: DPD text-date fallback, valid existing timestamp, invalid/ambiguous dates, carrier/bucket guards, rendered date and delivery sort order')
+
+
+template = macros([])
+for read_at, expected in [
+    (datetime(2026, 10, 20, 12, tzinfo=TZ), ['2026-10-21', '2026-10-21']),
+    (datetime(2026, 10, 19, 12, tzinfo=TZ), ['2026-10-20', '2026-10-20']),
+    (datetime(2026, 10, 18, 12, tzinfo=TZ), []),
+    (None, []),
+]:
+    assert json.loads(template.amazon_lieferzeitraum('Ankunft morgen', read_at)) == expected
+assert json.loads(template.amazon_lieferzeitraum(
+    'Zustellung: 20. Oktober - 21. Oktober', datetime(2026, 10, 19, 12, tzinfo=TZ)
+)) == ['2026-10-20', '2026-10-21']
+print('PASS: Amazon relative delivery dates, expired promises and delivery ranges')

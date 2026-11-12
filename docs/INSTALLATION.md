@@ -13,7 +13,7 @@ Der Export verändert die laufende Installation nicht. Ein späterer Git-Push in
 
 ## Dateien
 
-1. `custom_components/dpd_assist` und `custom_components/dpd_enrichment` nach `/config/custom_components/` kopieren.
+1. `custom_components/dpd_assist`, `custom_components/dpd_enrichment` und `custom_components/paket_liefertermine` nach `/config/custom_components/` kopieren.
 2. `custom_templates/pakete.jinja` und `www/pakete/` an die gleichnamigen Stellen übernehmen.
 3. Die Dateien aus `packages/` bei bestehender Paket-Einbindung übernehmen. Beispiel für die Einbindung und das Frontend-Modul: `examples/configuration.example.yaml`. Vorhandene Abschnitte zusammenführen, nicht die Konfiguration überschreiben.
 4. `parcel_mail_username` in der vorhandenen `secrets.yaml` hinterlegen. Zusätzlich `mail@example.invalid` in der Mail-Automation und im Brief-Package durch das zum IMAP-Ereignis passende Konto ersetzen. Diese Vergleiche benötigen den tatsächlichen Ereigniswert.

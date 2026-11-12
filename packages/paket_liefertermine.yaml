@@ -1,0 +1,17 @@
+paket_liefertermine:
+
+template:
+  - sensor:
+      - name: Paket Liefertermine Zusatz
+        unique_id: paket_liefertermine_zusatz
+        state: >-
+          {% from 'pakete.jinja' import amazon_termine %}
+          {{ amazon_termine() | from_json | length }}
+        attributes:
+          termine: >-
+            {% from 'pakete.jinja' import amazon_termine %}
+            {% set ns = namespace(termine=[]) %}
+            {% for p in amazon_termine() | from_json %}
+              {% set ns.termine = ns.termine + [dict(barcode=p.barcode, carrier=p.carrier, planned_from=p.planned_from, planned_to=p.planned_to)] %}
+            {% endfor %}
+            {{ ns.termine }}

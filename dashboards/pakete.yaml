@@ -16,10 +16,10 @@ views:
     - type: markdown
       content: '{% from ''pakete.jinja'' import anzahl %}
 
-        <div><div>DEIN LIEFERÜBERBLICK</div><h1>Pakete &amp; Briefe</h1><p>Alles auf einen Blick. Von
-        der Ankündigung bis zur Ankunft.</p><div><span>{{ anzahl(''incoming_parcels'') }} unterwegs</span><span>{{
-        anzahl(''awaiting_pickup'') }} abholbereit</span><span>{{ (state_attr(''sensor.briefankuendigungen'',''ankuendigungen'')
-        or []) | length }} Briefankündigungen</span></div></div>'
+        <div><div>SENDUNGSÜBERSICHT</div><h1>Pakete &amp; Briefe</h1><div><span>{{ anzahl(''incoming_parcels'')
+        }} unterwegs</span><span>{{ anzahl(''announced_parcels'') }} angekündigt</span><span>{{ anzahl(''awaiting_pickup'')
+        }} abholbereit</span><span>{{ (state_attr(''sensor.briefankuendigungen'',''ankuendigungen'') or [])
+        | length }} Briefankündigungen</span></div></div>'
       grid_options:
         columns: full
       card_mod:
@@ -454,53 +454,71 @@ views:
         columns: full
         rows: 1
     - type: markdown
-      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile,
-        dienst_stand, dienst_zustellung, tabelle, demo %}{{ tabelle() }}
+      content: '{% from ''pakete.jinja'' import liste, held, aktiv, zugestellt, ausgehend, dienst_zeile, dienst_stand,
+        dienst_zustellung, tabelle, demo %}{{ tabelle() }}
 
 
-        Gesamt zählt jede erkennbare Sendung einmal. Amazon-Sendungen können zugleich bei DHL oder anderen
-        Diensten erscheinen.'
+
+
+        Gesamt zählt jede erkennbare Sendung einmal. Amazon-Sendungen können zugleich bei DHL oder anderen Diensten
+        erscheinen.'
       card_mod:
         style:
           ha-markdown$: 'table{width:100%;border-collapse:collapse}
 
+
             td,th{padding:9px 4px !important;text-align:center !important;vertical-align:middle;border:none
             !important}
 
+
             th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--secondary-text-color);font-weight:600}
+
 
             th ha-icon{--mdc-icon-size:20px;display:block;margin:0 auto}
 
+
             td:nth-child(2),th:nth-child(2){text-align:left !important;font-weight:600}
+
 
             td:first-child,th:first-child{width:32px}
 
+
             tbody tr{border-top:1px solid var(--divider-color)}
+
 
             tbody tr:last-child{border-top:2px solid var(--divider-color)}
 
+
             td img{border-radius:6px;display:block;margin:auto;width:24px;max-width:none}
 
+
             th > span{position:relative;display:block;cursor:help}
+
 
             th > span > span{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);padding:7px
             10px;border-radius:6px;background:var(--primary-text-color);color:var(--primary-background-color);font-size:12px;font-weight:500;text-transform:none;letter-spacing:normal;white-space:nowrap;z-index:10;box-shadow:0
             2px 8px #0005;pointer-events:none}
 
+
             th > span:hover > span{display:block}
+
+            th:nth-last-child(-n+2) > span > span{left:auto;right:0;transform:none}
+
+
 
 
             ha-markdown-element > div > a{border-radius:16px !important;margin:8px 0 !important;padding:15px
-            !important;background:#ffffff09 !important;box-shadow:none !important}ha-markdown-element
-            > div > a:hover{background:#78b4dc17 !important}table{font-variant-numeric:tabular-nums}tbody
-            tr:hover{background:#78b4dc0c}
+            !important;background:#ffffff09 !important;box-shadow:none !important}ha-markdown-element > div
+            > a:hover{background:#78b4dc17 !important}table{font-variant-numeric:tabular-nums}tbody tr:hover{background:#78b4dc0c}
+
 
             ha-markdown-element > div > a{padding:10px !important;margin:5px 0 !important;border-radius:12px
-            !important}td,th{padding:8px 2px !important}th ha-icon{--mdc-icon-size:18px}td img{width:21px
-            !important}'
+            !important}td,th{padding:8px 2px !important}th ha-icon{--mdc-icon-size:18px}td img{width:21px !important}'
           .: '
 
+
             ha-card{border-radius:22px;border:1px solid rgba(150,180,210,.13);box-shadow:0 8px 24px #0002;background:linear-gradient(145deg,#ffffff09,#ffffff02),var(--card-background-color);}
+
 
             ha-card{border-radius:16px;box-shadow:0 4px 14px #0002}'
       grid_options:
@@ -509,7 +527,7 @@ views:
     column_span: 2
     cards:
     - type: heading
-      heading: Unterwegs zu dir
+      heading: Offene Sendungen
       heading_style: title
       icon: mdi:truck-fast-outline
       grid_options:
@@ -982,6 +1000,7 @@ views:
     - type: calendar
       entities:
       - calendar.parcel_aggregator_deliveries
+      - calendar.paket_liefertermine_zusatz
       initial_view: listWeek
       grid_options:
         columns: full

@@ -12,6 +12,11 @@ HACS-Updates für DHL oder Amazon überschrieben.
   Vorlage „Zustellung: <Wochentag>“ wortgetreu aus der Antwort. Für fehlende
   Zustelldaten erkennt sie auch „Im Briefkasten hinterlegt“ als Zustellereignis.
   Der Wochentag allein wird nicht als Kalendereintrag interpretiert.
+  Die Vorlage übernimmt auch eindeutige Datumsbereiche sowie „Ankunft heute“
+  und „Ankunft morgen“. Für relative Angaben dient der letzte erfolgreiche
+  Amazon-Abruf als Bezugspunkt. Die lokale Kalenderintegration
+  `paket_liefertermine` stellt diese Termine ganztägig dar, wenn der
+  Paketdienst kein strukturiertes Lieferfenster liefert.
 
 Der Schutz betrifft die Dashboard-Anzeige und ihre Zähler. Wenn ein Update
 Sendungen oder die benötigten Rohdaten nicht mehr liefert oder deren Schema
